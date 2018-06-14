@@ -16,6 +16,7 @@ class EncryptionHook extends AbstractHook implements Contract {
     public function __construct(Encrypter $encrypter, ConfigRepository $configRepository) {
         $this->encrypter = $encrypter;
         $this->configRepository = $configRepository;
+        parent::__construct();
     }
 
     protected function concrete(array $config = [], array $concreteParams = []) {

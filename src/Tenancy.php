@@ -5,17 +5,22 @@ namespace AmcLab\Tenancy;
 use AmcLab\Tenancy\Contracts\Tenant;
 use AmcLab\Tenancy\Exceptions\TenancyException;
 use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
+use BadMethodCallException;
 use Carbon\Carbon;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Events\Dispatcher;
 
 class Tenancy {
 
     use HasEventsDispatcherTrait;
 
     protected $tenant;
+    protected $events;
+    protected $app;
 
-    public function __construct(Tenant $tenant, Application $app) {
+    public function __construct(Tenant $tenant, Dispatcher $events, Application $app) {
         $this->tenant = $tenant;
+        $this->events = $events;
         $this->app = $app;
     }
 
@@ -67,7 +72,7 @@ class Tenancy {
         $newTenant = $this->app->make(Tenant::class)
         ->createIdentity($newIdentity);
 
-        $this->assign($newIdentity);
+        $this->assignTo($newIdentity);
 
         // TODO: factories tabelle utenti, ruoli, ecc...
 
@@ -88,7 +93,7 @@ class Tenancy {
         }
 
         $camel = camel_case($studly);
-        return $this->getTenant()->getResolver()->getHooks()['tenancy.hook.' . $camel]['instance']->use();
+        return $this->getTenant()->getResolver()->get($camel)->use();
 
     }
 }

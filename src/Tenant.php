@@ -7,9 +7,11 @@ use AmcLab\Tenancy\Contracts\Pathfinder;
 use AmcLab\Tenancy\Contracts\Resolver;
 use AmcLab\Tenancy\Contracts\Tenant as Contract;
 use AmcLab\Tenancy\Exceptions\TenantException;
+use AmcLab\Tenancy\Traits\HasConfigTrait;
 use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
 use BadMethodCallException;
 use Carbon\Carbon;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\QueryException;
@@ -22,26 +24,28 @@ use InvalidArgumentException;
 class Tenant implements Contract {
 
     use HasEventsDispatcherTrait;
+    use HasConfigTrait;
 
-    protected $config;
     protected $messenger;
     protected $resolver;
     protected $pathfinder;
     protected $kernel;
     protected $db;
+
     protected $subject;
 
     protected $identity;
 
-    public function __construct(array $config = [], Messenger $messenger, Resolver $resolver, Pathfinder $pathfinder, Kernel $kernel, ConnectionResolverInterface $db) {
-
-        $this->config = $config;
-        $this->messenger = $messenger;
-        $this->resolver = $resolver;
+    public function __construct(Pathfinder $pathfinder, Messenger $messenger, Resolver $resolver, Kernel $kernel) {
         $this->pathfinder = $pathfinder;
+        $this->resolver = $resolver;
+        $this->messenger = $messenger->setPathfinder($pathfinder);
         $this->kernel = $kernel;
-        $this->db = $db;
+    }
 
+    public function setConnectionResolver(ConnectionResolverInterface $db) {
+        $this->db = $db;
+        return $this;
     }
 
     public function getMessenger() {
@@ -170,8 +174,8 @@ class Tenant implements Contract {
         $hooks = $this->resolver->getHooks();
 
         foreach ($hooks as $hook) {
-            $entry = $hook['config']['packageEntry'];
-            $package[$entry] = $hook['instance']->generate($generateParams);
+            $entry = $hook->getEntry();
+            $package[$entry] = $hook->generate($generateParams);
         }
 
         $this->messenger->write($package, $identity);
@@ -198,7 +202,7 @@ class Tenant implements Contract {
             'host' => $databaseServer['host'] ?? ('mariadb'.random_int(1,5).'.example.com'),
             'port' => $databaseServer['port'] ?? '3306',
             'database' => 'DB_' . strtoupper(join('_',$pathway['resourceId'])),
-            'username' => 'user_' . strtoupper(array_last($pathway['breadcrumbs'])) . '_' . strtolower(str_random(4)),
+            'username' => 'user_' . strtoupper(array_last($pathway['normalized'])) . '_' . strtolower(str_random(4)),
             'password' => str_random(16),
         ];
 

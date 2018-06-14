@@ -1,5 +1,115 @@
 <?php
+namespace AmcLab\Tenancy\Providers;
 
+use AmcLab\Tenancy\Contracts\Factories\AuthorizedClientFactory;
+use AmcLab\Tenancy\Contracts\Messenger;
+use AmcLab\Tenancy\Contracts\Pathfinder;
+use AmcLab\Tenancy\Contracts\Resolver;
+use AmcLab\Tenancy\Contracts\Services\ConciergeService;
+use AmcLab\Tenancy\Contracts\Services\LockerService;
+use AmcLab\Tenancy\Contracts\Tenancy;
+use AmcLab\Tenancy\Contracts\Tenant;
+use Illuminate\Support\ServiceProvider;
+
+class TenancyServiceProvider extends ServiceProvider
+{
+
+    public function boot()
+    {
+        $this->publishes(array(
+            __DIR__.'../../config/tenancy.php' => config_path('tenancy.php'),
+        ), 'config');
+    }
+
+
+    public function register()
+    {
+
+        $this->app->bind(Pathfinder::class, function($app) {
+            return $app->make(\AmcLab\Tenancy\Pathfinder::class)
+            ->setConfig($app['config']['tenancy.pathfinder']);
+        });
+
+        $this->app->bind(Resolver::class, function($app) {
+            return $app->make(\AmcLab\Tenancy\Resolver::class)
+            ->setHooks($this->registerHooks());
+        });
+
+        $this->app->bind(LockerService::class, function($app) {
+
+            $config = $app['config']['tenancy.locker'];
+
+            $this->app->bind(AuthorizedClientFactory::class, function($app) use ($config) {
+                return $app->make(\AmcLab\Tenancy\Factories\AuthorizedClientFactory::class)
+                ->create($config['auth']);
+            });
+
+            return $app->make(\AmcLab\Tenancy\Services\LockerService::class)
+            ->setConfig($config)
+            ->setClient($app->make(AuthorizedClientFactory::class));
+        });
+
+        $this->app->bind(ConciergeService::class, function($app) {
+            return $app->make(\AmcLab\Tenancy\Services\ConciergeService::class)
+            ->setConfig($app['config']['tenancy.concierge']);
+        });
+
+
+        $this->app->bind(Messenger::class, function($app) {
+            $config = $app['config']['tenancy.messenger'];
+            return $app->make(\AmcLab\Tenancy\Messenger::class)
+            ->setCacheRepository($app['cache']->store($config['cache']['driver']))
+            ->setConfig($config);
+        });
+
+        $this->app->bind(Tenant::class, function($app) {
+            return $app->make(\AmcLab\Tenancy\Tenant::class)
+            ->setConfig($app['config']['tenancy.tenant'])
+            ->setConnectionResolver($app['db']);
+        });
+
+        $this->app->singleton(Tenancy::class, \AmcLab\Tenancy\Tenancy::class);
+        $this->app->alias(Tenancy::class, 'tenancy');
+
+    }
+
+    protected function registerHooks() {
+
+        // TODO: studiare se è possibile/sensato/opportuno spostare questo nel boot
+        // (vedi problema iniezione automatica di ConnectionResolverInstance)
+
+        $hooks = [];
+        $list = $this->app['config']->get('tenancy.hooks');
+
+        foreach ($list as $hook) {
+
+            $with = [];
+
+            if ($dependencies = $hook[1] ?? []) {
+                foreach ($dependencies as $dependency) {
+                    $with[] = $this->app->make($dependency);
+                }
+            }
+
+            $hooks[] = $this->app->make($hook[0], $with);
+
+        }
+
+        return $hooks;
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+/*
 namespace AmcLab\Tenancy\Providers;
 
 use AmcLab\Tenancy\Contracts\Environment as EnvironmentContract;
@@ -26,11 +136,7 @@ use Illuminate\Support\ServiceProvider;
 
 class TenancyServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap the application services.
-     *
-     * @return void
-     */
+
     public function boot()
     {
         $this->publishes(array(
@@ -38,11 +144,6 @@ class TenancyServiceProvider extends ServiceProvider
         ), 'config');
     }
 
-    /**
-     * Register the application services.
-     *
-     * @return void
-     */
 
     public function register()
     {
@@ -101,3 +202,4 @@ class TenancyServiceProvider extends ServiceProvider
     }
 
 }
+*/

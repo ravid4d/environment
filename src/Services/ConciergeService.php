@@ -3,21 +3,19 @@
 namespace AmcLab\Tenancy\Services;
 
 use AmcLab\Tenancy\Contracts\Services\ConciergeService as Contract;
+use AmcLab\Tenancy\Traits\HasConfigTrait;
 use BadMethodCallException;
+use Exception;
 use Illuminate\Encryption\Encrypter;
 use InvalidArgumentException;
-use Exception;
 
 class ConciergeService implements Contract {
 
+    use HasConfigTrait;
+
     protected $keys;
 
-    public function __construct(array $config) {
-
-        foreach ($config['generators'] as $keyName => $keyValue) {
-            $this->keys[$keyName] = base64_decode(substr($keyValue, 7));
-        }
-
+    public function __construct() {
     }
 
     /**
@@ -27,7 +25,14 @@ class ConciergeService implements Contract {
      * @param mixed ...$args
      * @return void
      */
-    public function generate(string $keyName, ...$args) :? string{
+    public function generate(string $keyName, ...$args) :? string {
+
+        if (!$this->keys) {
+            foreach ($this->config['generators'] as $keyName => $keyValue) {
+                $this->keys[$keyName] = base64_decode(substr($keyValue, 7));
+            }
+        }
+
         if (is_array($args[0] ?? [])) {
             $args = $args[0];
         }

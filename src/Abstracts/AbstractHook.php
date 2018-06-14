@@ -8,6 +8,11 @@ use AmcLab\Tenancy\Exceptions\HookException;
 abstract class AbstractHook implements Contract {
 
     protected $instance = null;
+    protected $entry;
+
+    public function __construct() {
+        $this->entry = camel_case(substr(class_basename(static::class), 0, -4));
+    }
 
     final public function populate(array $config = [], array $concreteParams = [], bool $singleton = true) {
 
@@ -17,6 +22,10 @@ abstract class AbstractHook implements Contract {
 
         return $this->instance;
 
+    }
+
+    final public function getEntry() {
+        return $this->entry;
     }
 
     final public function use() {

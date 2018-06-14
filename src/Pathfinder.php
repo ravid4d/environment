@@ -4,13 +4,13 @@ namespace AmcLab\Tenancy;
 
 use AmcLab\Tenancy\Contracts\PathFinder as Contract;
 use AmcLab\Tenancy\Exceptions\PathfinderException;
+use AmcLab\Tenancy\Traits\HasConfigTrait;
 
 class Pathfinder implements Contract {
 
-    protected $config;
+    use HasConfigTrait;
 
-    public function __construct(array $config) {
-        $this->config = $config;
+    public function __construct() {
     }
 
     public function for(array $breadcrumbs = []) {
@@ -28,11 +28,16 @@ class Pathfinder implements Contract {
             // originale
             'breadcrumbs' => $breadcrumbs,
 
+            // versione normalizzata (senza caratteri non alfanumerici)
+            'normalized' => $normalized = array_map(function($v){
+                return trim(preg_replace('/[^a-zA-Z0-9]+/', '_', $v), '_');
+            }, $breadcrumbs),
+
             // costruisce la catena di pezzi per comporre il resourceId
-            'resourceId' => $__resourceId = $this->mergeChain('resourceId', $breadcrumbs),
+            'resourceId' => $resourceId = $this->mergeChain('resourceId', $normalized),
 
             // genera lo stack di chiavi per la cifratura
-            'hashable' => $__hashable = $this->mergeChain('hashable', $__resourceId, true),
+            'hashable' => $hashable = $this->mergeChain('hashable', $resourceId, true),
 
         ];
 
@@ -48,6 +53,7 @@ class Pathfinder implements Contract {
     protected function mergeChain(string $name, array $breadcrumbs, $encode = false) {
 
         $chain = $this->config['chains'][$name];
+
         if ($encode) {
             $chain = array_map(function($v){
                 return md5($v);

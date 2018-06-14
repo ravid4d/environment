@@ -7,58 +7,62 @@ use Acquia\Hmac\Guzzle\HmacAuthMiddleware;
 use Acquia\Hmac\Key;
 use AmcLab\Tenancy\Contracts\Services\LockerService as Contract;
 use AmcLab\Tenancy\Exceptions\LockerServiceException;
+use AmcLab\Tenancy\Traits\HasConfigTrait;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\RequestOptions;
+use Illuminate\Config\Repository;
 
 class LockerService implements Contract {
+
+    use HasConfigTrait;
 
     protected const ENDPOINT_URI_BASE = '/v1/tenancy';
 
     protected $client;
-    protected $config;
 
-    public function __construct(array $config, ClientInterface $client) {
+    public function __construct() {
+    }
 
-        $this->config = $config;
-
+    public function setClient(ClientInterface $client){
         $this->client = $client;
-
+        return $this;
     }
 
-    public function getConfig() : array {
-        return $this->config;
-    }
-
-    protected function makeUri(array $config) : string {
+    protected function makeUri(array $input) : string {
 
         return join('/', [
             self::ENDPOINT_URI_BASE,
-            join(':', $config['resourceId'] ?? []),
-            join('/', $config['sub'] ?? []),
+            join(':', $input['resourceId'] ?? []),
+            join('/', $input['sub'] ?? []),
         ]);
 
     }
 
-    public function get(array $config) : array {
+    public function get(array $input) : array {
 
-        if (!isset($config['resourceId'])) {
+        if (!isset($input['resourceId'])) {
             throw new LockerServiceException("Missing 'resourceId'");
         }
 
         try {
 
-            $externalStoreRequest = $this->client->get($this->makeUri($config));
+            $externalStoreRequest = $this->client->get($this->makeUri($input));
 
         }
 
         catch(Exception $e) {
 
             if ($e instanceof MalformedResponseException || $e instanceof RequestException){
-                throw new LockerServiceException($e->getResponse()->getReasonPhrase(), $config['resourceId'], $e->getResponse()->getStatusCode(), $e);
+
+                throw new LockerServiceException(
+                    (is_null($e->getResponse()) ? $e->getMessage() : $e->getResponse()->getReasonPhrase()),
+                    $input['resourceId'],
+                    (is_null($e->getResponse()) ? $e->getCode() : $e->getResponse()->getStatusCode()),
+                    $e);
             }
 
             throw $e;
@@ -69,9 +73,9 @@ class LockerService implements Contract {
 
     }
 
-    public function put(array $config, $payload) : array {
+    public function put(array $input, $payload) : array {
 
-        if (!isset($config['resourceId'])) {
+        if (!isset($input['resourceId'])) {
             throw new LockerServiceException("Missing 'resourceId'");
         }
 
@@ -79,14 +83,13 @@ class LockerService implements Contract {
 
         try {
 
-            $externalStoreRequest = $this->client->put($this->makeUri($config), $params);
+            $externalStoreRequest = $this->client->put($this->makeUri($input), $params);
 
         }
 
         catch(Exception $e) {
-
             if ($e instanceof MalformedResponseException || $e instanceof RequestException){
-                throw new LockerServiceException($e->getResponse()->getReasonPhrase(), $config['resourceId'], $e->getResponse()->getStatusCode(), $e);
+                throw new LockerServiceException($e->getResponse()->getReasonPhrase(), $input['resourceId'], $e->getResponse()->getStatusCode(), $e);
             }
 
             throw $e;
@@ -97,22 +100,22 @@ class LockerService implements Contract {
 
     }
 
-    public function delete(array $config) : bool {
+    public function delete(array $input) : bool {
 
-        if (!isset($config['resourceId'])) {
+        if (!isset($input['resourceId'])) {
             throw new LockerServiceException("Missing 'resourceId'");
         }
 
         try {
 
-            $externalStoreRequest = $this->client->delete($this->makeUri($config));
+            $externalStoreRequest = $this->client->delete($this->makeUri($input));
 
         }
 
         catch(Exception $e) {
 
             if ($e instanceof MalformedResponseException || $e instanceof RequestException){
-                throw new LockerServiceException($e->getResponse()->getReasonPhrase(), $config['resourceId'], $e->getResponse()->getStatusCode(), $e);
+                throw new LockerServiceException($e->getResponse()->getReasonPhrase(), $input['resourceId'], $e->getResponse()->getStatusCode(), $e);
             }
 
             throw $e;
@@ -123,9 +126,9 @@ class LockerService implements Contract {
 
     }
 
-    public function post(array $config, $payload) : array {
+    public function post(array $input, $payload) : array {
 
-        if (!isset($config['resourceId'])) {
+        if (!isset($input['resourceId'])) {
             throw new LockerServiceException("Missing 'resourceId'");
         }
 
@@ -133,14 +136,14 @@ class LockerService implements Contract {
 
         try {
 
-            $externalStoreRequest = $this->client->post($this->makeUri($config), $params);
+            $externalStoreRequest = $this->client->post($this->makeUri($input), $params);
 
         }
 
         catch(Exception $e) {
 
             if ($e instanceof MalformedResponseException || $e instanceof RequestException){
-                throw new LockerServiceException($e->getResponse()->getReasonPhrase(), $config['resourceId'], $e->getResponse()->getStatusCode(), $e);
+                throw new LockerServiceException($e->getResponse()->getReasonPhrase(), $input['resourceId'], $e->getResponse()->getStatusCode(), $e);
             }
 
             throw $e;

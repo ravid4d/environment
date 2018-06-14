@@ -8,13 +8,14 @@ use AmcLab\Tenancy\Contracts\Services\ConciergeService;
 use AmcLab\Tenancy\Contracts\Services\LockerService;
 use AmcLab\Tenancy\Exceptions\LockerServiceException;
 use AmcLab\Tenancy\Exceptions\MessengerException;
+use AmcLab\Tenancy\Traits\HasConfigTrait;
 use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Encryption\Encrypter;
 
 class Messenger implements Contract {
 
-    use HasEventsDispatcherTrait;
+    use HasConfigTrait;
 
     protected $cache;
     protected $encrypter;
@@ -47,33 +48,25 @@ class Messenger implements Contract {
      * @param boolean $production
      * @param array $shortcuts
      */
-    public function __construct(array $config, Cache $cache, Encrypter $encrypter) {
+    public function __construct(ConciergeService $conciergeService, LockerService $lockerService, Encrypter $encrypter) {
 
-        $this->config = $config;
-        $this->cache = $cache;
+        $this->conciergeService = $conciergeService;
+        $this->lockerService = $lockerService;
         $this->encrypter = $encrypter;
 
-        $this->remember = $config['cache']['remember'];
-        $this->production = $config['cache']['production'];
-
     }
 
-    public function withConciergeService(ConciergeService $conciergeService) : Contract {
-        $this->conciergeService = $conciergeService;
+    public function setCacheRepository(Cache $cache) {
+        $this->cache = $cache;
         return $this;
     }
 
-    public function withLockerService(LockerService $lockerService) : Contract {
-        $this->lockerService = $lockerService;
-        return $this;
-    }
-
-    public function withShortcuts(array $shortcuts) : Contract {
+    public function setShortcuts(array $shortcuts) : Contract {
         $this->shortcuts = $shortcuts;
         return $this;
     }
 
-    public function withPathfinder(Pathfinder $pathfinder) : Contract {
+    public function setPathfinder(Pathfinder $pathfinder) : Contract {
         $this->pathfinder = $pathfinder;
         return $this;
     }
@@ -122,12 +115,7 @@ class Messenger implements Contract {
 
         if (!($id === $staticId)) {
             $staticId = $id;
-            $staticInstance = (new self($this->config, $this->cache, $this->encrypter))
-            ->withConciergeService($this->conciergeService)
-            ->withLockerService($this->lockerService)
-            ->withPathfinder($this->pathfinder)
-            ->withShortcuts($shortcuts);
-
+            $staticInstance = (clone $this)->setShortcuts($shortcuts);
         }
 
         return $staticInstance;
@@ -185,7 +173,7 @@ class Messenger implements Contract {
         $shortcuts = $this->usePathfinderFor($breadcrumbs);
 
         // legge dalla cache di uid o vi scrive il record ottenuto dal lockerService
-        $retained = $this->cache->remember($shortcuts['uid'], $this->remember, function () use ($shortcuts) {
+        $retained = $this->cache->remember($shortcuts['uid'], $this->config['cache']['remember'], function () use ($shortcuts) {
             $body = $this->lockerService->get(['resourceId' => $shortcuts['resourceId']]);
             return $this->retain($body, $shortcuts['hashable']);
         });
@@ -222,7 +210,7 @@ class Messenger implements Contract {
         // IMPORTANT: aggiorno la cache attuale del tenant!
         // TODO: eliminare questo blocco e spostarlo in un metodo a parte per non creare ridondanza
         $this->cache->forget($shortcuts['uid']);
-        $retained = $this->cache->remember($shortcuts['uid'], $this->remember, function () use ($body, $shortcuts) {
+        $retained = $this->cache->remember($shortcuts['uid'], $this->config['cache']['remember'], function () use ($body, $shortcuts) {
             return $this->retain($body, $shortcuts['hashable']);
         });
 
@@ -326,13 +314,13 @@ class Messenger implements Contract {
      */
     protected function retain($payload, array $hashable) {
 
-        // NOTE: se $this->production è false, la cache conterrà i dati IN CHIARO!
-        if (!$this->production) {
+        // NOTE: se $this->config['cache']['production'] è false, la cache conterrà i dati IN CHIARO!
+        if (!$this->config['cache']['production']) {
             $payload = $this->encrypter($hashable)->decrypt($payload);
         }
 
         return [
-            'encoded' => $this->production,
+            'encoded' => $this->config['cache']['production'],
             'payload' => $payload,
         ];
 

@@ -14,9 +14,10 @@ class DatabaseHook extends AbstractHook implements Contract {
     protected $configRepository;
     protected $concreteParams;
 
-    public function __construct(ConnectionResolverInterface $connection, ConfigRepository $configRepository) {
+    public function __construct(\Illuminate\Database\DatabaseManager $connection, ConfigRepository $configRepository) {
         $this->connection = $connection;
         $this->configRepository = $configRepository;
+        parent::__construct();
     }
 
     protected function concrete(array $config = [], array $concreteParams = []) {
