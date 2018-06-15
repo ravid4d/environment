@@ -12,10 +12,12 @@ use AmcLab\Tenancy\Traits\HasConfigTrait;
 use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Encryption\Encrypter;
+use Illuminate\Contracts\Events\Dispatcher;
 
 class Messenger implements Contract {
 
     use HasConfigTrait;
+    use HasEventsDispatcherTrait;
 
     protected $cache;
     protected $encrypter;
@@ -48,11 +50,12 @@ class Messenger implements Contract {
      * @param boolean $production
      * @param array $shortcuts
      */
-    public function __construct(ConciergeService $conciergeService, LockerService $lockerService, Encrypter $encrypter) {
+    public function __construct(ConciergeService $conciergeService, LockerService $lockerService, Encrypter $encrypter, Dispatcher $events) {
 
         $this->conciergeService = $conciergeService;
         $this->lockerService = $lockerService;
         $this->encrypter = $encrypter;
+        $this->setEventsDispatcher($events);
 
     }
 
@@ -187,6 +190,21 @@ class Messenger implements Contract {
             'migration' => $retained['payload']['migration'],
             'active' => !!$retained['payload']['active'],
         ];
+
+    }
+
+    public function readPackage(...$breadcrumbs) : array {
+
+        $shortcuts = $this->usePathfinderFor($breadcrumbs);
+
+        // legge dalla cache di uid o vi scrive il record ottenuto dal lockerService
+        $retained = $this->cache->remember($shortcuts['uid'], $this->config['cache']['remember'], function () use ($shortcuts) {
+            $body = $this->lockerService->get(['resourceId' => $shortcuts['resourceId']]);
+            return $this->retain($body, $shortcuts['hashable']);
+        });
+
+        // decodifica il record
+        return $disclosed = $this->disclose($retained, $shortcuts['hashable']);
 
     }
 

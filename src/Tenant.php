@@ -13,6 +13,7 @@ use BadMethodCallException;
 use Carbon\Carbon;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\QueryException;
 use Illuminate\Encryption\Encrypter;
@@ -36,11 +37,12 @@ class Tenant implements Contract {
 
     protected $identity;
 
-    public function __construct(Pathfinder $pathfinder, Messenger $messenger, Resolver $resolver, Kernel $kernel) {
+    public function __construct(Pathfinder $pathfinder, Messenger $messenger, Resolver $resolver, Kernel $kernel, Dispatcher $events) {
         $this->pathfinder = $pathfinder;
         $this->resolver = $resolver;
         $this->messenger = $messenger->setPathfinder($pathfinder);
         $this->kernel = $kernel;
+        $this->setEventsDispatcher($events);
     }
 
     public function setConnectionResolver(ConnectionResolverInterface $db) {
@@ -48,8 +50,12 @@ class Tenant implements Contract {
         return $this;
     }
 
-    public function getMessenger() {
-        return $this->messenger;
+    // public function getMessenger() {
+    //     return $this->messenger; // ATTENZIONE!!
+    // }
+
+    public function getSubject() {
+        return $this->subject;
     }
 
     public function getResolver() {
@@ -94,9 +100,67 @@ class Tenant implements Contract {
         return $this;
     }
 
-    public function persist($package, $identity = null) {
-        throw new \Exception('TODO!');
-        $this->messenger->write($package, $identity);
+    public function customize(array $customPackage = []) {
+
+        $persisted = $this->subject->readPackage();
+
+        foreach ($customPackage as $key => $value) {
+
+            $writable = false;
+
+            // se esiste la voce...
+            if (isset($persisted[$key])) {
+
+                // ...assicurati che sia customizzabile, altrimenti ignorala
+                if ($persisted[$key]['__isCustomizable'] ?? false) {
+
+                    // se il valore della nuova chiave è null, allora eliminala dal package
+                    if ($value === null) {
+                        unset($persisted[$key]);
+                    }
+
+                    else {
+                        $writable = true;
+                    }
+
+                }
+
+            }
+
+            // se non esiste, creala contrassegnandola come customizzabile
+            else {
+                $writable = true;
+            }
+
+            // se quanto passato è scrivibile, procedi:
+            if ($writable) {
+
+                if (is_array($value)) {
+                    $payload = ['package' => $value];
+                }
+
+                else if (is_scalar($value)) {
+                    $payload = ['raw' => $value];
+                }
+
+                else if (is_object($value)) {
+                    $payload = ['serialized' => serialize($value)];
+                }
+
+                else {
+                    throw new TenantException('Unhandled payload type for persistence');
+                }
+
+                $persisted[$key] = ['__isCustomizable' => true] + $payload;
+
+            }
+
+        }
+
+        $this->subject->write($persisted);
+
+        return $this;
+
     }
 
     public function alignMigrations() {
@@ -109,6 +173,9 @@ class Tenant implements Contract {
             $this->fire('tenant.migrating', ['identity' => $this->identity]);
 
             // TODO: riattivare e testare...
+            $this->fire('TODO.tenant.suspend');
+            $this->fire('TODO.migrate');
+            $this->fire('TODO.tenant.wakeup');
             // $this->subject->suspend();
             // $this->kernel->call('migrate', ['--force' => true]);
             // $this->subject->wakeup();
@@ -161,7 +228,7 @@ class Tenant implements Contract {
             throw new TenantException('Tenant "' . $identity . '" already exists!');
         }
 
-        $this->messenger->subject($identity);
+        $this->subject = $this->messenger->subject($identity);
 
         $pathway = $this->pathfinder->for([$identity]);
 
@@ -178,7 +245,7 @@ class Tenant implements Contract {
             $package[$entry] = $hook->generate($generateParams);
         }
 
-        $this->messenger->write($package, $identity);
+        $this->subject->write($package);
 
         $this->fire('tenant.identity.created', ['identity' => $identity]);
 

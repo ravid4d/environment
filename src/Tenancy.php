@@ -4,23 +4,16 @@ namespace AmcLab\Tenancy;
 
 use AmcLab\Tenancy\Contracts\Tenant;
 use AmcLab\Tenancy\Exceptions\TenancyException;
-use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
 use BadMethodCallException;
-use Carbon\Carbon;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Events\Dispatcher;
 
 class Tenancy {
 
-    use HasEventsDispatcherTrait;
-
     protected $tenant;
-    protected $events;
     protected $app;
 
-    public function __construct(Tenant $tenant, Dispatcher $events, Application $app) {
+    public function __construct(Tenant $tenant, Application $app) {
         $this->tenant = $tenant;
-        $this->events = $events;
         $this->app = $app;
     }
 
@@ -34,14 +27,13 @@ class Tenancy {
      * @param string $identity
      * @return void
      */
-    public function assignTo(string $identity) : void {
+    public function setIdentity(string $identity) : Tenant {
 
         if ($this->getIdentity()){
-            throw new TenancyException('Tenancy is already assigned');
+            throw new TenancyException('Tenancy identity is currently SET');
         }
 
-        $this->tenant
-        ->setIdentity($identity, [
+        return $this->tenant->setIdentity($identity, [
             'database' => [
                 'connection' => 'currentTenant',
                 'autoconnect' => true,
@@ -53,28 +45,45 @@ class Tenancy {
 
     }
 
-    public function leave() : void {
+    public function unsetIdentity() : Tenant {
         if ($this->getIdentity()){
             $this->tenant->unsetIdentity();
         }
+
+        return $this->tenant;
     }
 
     public function getIdentity() :? string {
-        return $this->getTenant()->getIdentity();
+        return $this->tenant->getIdentity();
     }
 
-    public function create($newIdentity) {
+    public function createIdentity($newIdentity) {
 
         if ($this->getIdentity()){
-            throw new TenancyException('Tenancy identity must be unset to proceed');
+            throw new TenancyException('Tenancy identity is currently SET');
         }
 
         $newTenant = $this->app->make(Tenant::class)
         ->createIdentity($newIdentity);
 
-        $this->assignTo($newIdentity);
+        $tenant = $this->setIdentity($newIdentity);
 
         // TODO: factories tabelle utenti, ruoli, ecc...
+        // $tenant->createBaseTables()
+        // $tenant->createUsers()....
+        // bla bla bla
+
+        return $tenant;
+
+    }
+
+    public function customize(array $customPackage) {
+
+        if (!$this->getIdentity()){
+            throw new TenancyException('Tenancy identity must be SET');
+        }
+
+        return $this->tenant->customize($customPackage);
 
     }
 
@@ -82,6 +91,9 @@ class Tenancy {
 
         // TODO: mettere altri/migliori controlli sul nome...
 
+        if ($name === 'set'){
+            return $this->setIdentity(...$args);
+        }
         if (substr($name, 0, 3) !== 'use') {
             throw new BadMethodCallException("Invalid method ".__CLASS__."->$name() called");
         }
@@ -93,7 +105,7 @@ class Tenancy {
         }
 
         $camel = camel_case($studly);
-        return $this->getTenant()->getResolver()->get($camel)->use();
+        return $this->tenant->getResolver()->get($camel)->use();
 
     }
 }

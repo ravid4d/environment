@@ -3,16 +3,12 @@
 namespace AmcLab\Tenancy\Services;
 
 use Acquia\Hmac\Exception\MalformedResponseException;
-use Acquia\Hmac\Guzzle\HmacAuthMiddleware;
-use Acquia\Hmac\Key;
 use AmcLab\Tenancy\Contracts\Services\LockerService as Contract;
 use AmcLab\Tenancy\Exceptions\LockerServiceException;
 use AmcLab\Tenancy\Traits\HasConfigTrait;
 use Exception;
-use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\HandlerStack;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Config\Repository;
 
@@ -27,7 +23,7 @@ class LockerService implements Contract {
     public function __construct() {
     }
 
-    public function setClient(ClientInterface $client){
+    public function setClient(ClientInterface $client) {
         $this->client = $client;
         return $this;
     }

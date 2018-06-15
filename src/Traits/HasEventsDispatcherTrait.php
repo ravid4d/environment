@@ -8,7 +8,7 @@ trait HasEventsDispatcherTrait {
 
     protected $events;
 
-    final public function setEventDispatcher(Dispatcher $events) : self {
+    final public function setEventsDispatcher(Dispatcher $events) : self {
         $this->events = $events;
         return $this;
     }
