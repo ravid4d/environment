@@ -101,23 +101,23 @@ class Tenant implements Contract {
 
     public function alignMigrations($connection) {
 
-        $current = $this->detectMigrationPoint();
+        $current = $this->detectMigrationPoint($connection);
         $status = $this->subject->read()['migration'];
 
         if ($status !== $current) {
 
-            $this->fire('tenant.migrating', ['identity' => $this->identity]);
-
             $this->subject->suspend();
+
+            $this->fire('tenant.migrating', ['identity' => $this->identity]);
             $this->kernel->call('migrate', [
                 '--force' => true,
                 '--database' => $connection,
             ]);
+            $this->fire('tenant.migrated', ['identity' => $this->identity]);
+
             $this->subject->wakeup();
 
-            $status = $this->subject->setMigrationPoint($this->detectMigrationPoint());
-
-            $this->fire('tenant.migrated', ['identity' => $this->identity]);
+            $status = $this->subject->setMigrationPoint($this->detectMigrationPoint($connection));
 
         }
 
@@ -125,11 +125,12 @@ class Tenant implements Contract {
 
     }
 
-    public function detectMigrationPoint() {
+    public function detectMigrationPoint($connection) {
+
         //! NOTE: TODO: FIXME: è decisamente da rivedere, perché non trovo adeguata documentazione su Illuminate\Database\Migrations\MigrationRepositoryInterface
         // determino l'hash della più recente migration presente su questo database
         try {
-            $migrationsList = $this->db->table('migrations')->orderBy('id', 'desc')->pluck('migration');
+            $migrationsList = $this->db->connection($connection)->table('migrations')->orderBy('id', 'desc')->pluck('migration');
         }
 
         // catturo l'eventuale QueryException
@@ -142,7 +143,9 @@ class Tenant implements Contract {
             // se arrivo qui, allora vuol dire che non esiste la tabella cercata ('migrations'),
             // ragion per cui è SICURO che sul database corrente debba essere lanciato il migrate.
             $migrationsList = [];
-            $this->kernel->call('migrate:install');
+            $this->kernel->call('migrate:install', [
+                '--database' => $connection,
+            ]);
         }
 
         return md5(json_encode($migrationsList));
