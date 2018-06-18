@@ -35,13 +35,13 @@ class Tenancy {
 
         return $this->tenant->setIdentity($identity, [
             'database' => [
-                'connection' => 'currentTenant',
+                'connection' => $connection = 'currentTenant',
                 'autoconnect' => true,
                 'makeDefault' => true,
             ]
         ])
-        ->alignMigrations()
-        ->alignSeeds();
+        ->alignMigrations($connection)
+        ->alignSeeds($connection);
 
     }
 

@@ -2,6 +2,6 @@
 
 namespace AmcLab\Tenancy\Contracts;
 
-interface Pathfinder {
+interface Store {
 
 }
