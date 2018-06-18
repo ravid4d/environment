@@ -71,7 +71,7 @@ class Tenant implements Contract {
     }
 
     public function setIdentity($identity, $concreteParams = []) {
-        $this->fire('tenant.identity.setting', ['identity' => $this->identity]);
+        $this->fire('tenant.identity.setting', ['identity' => $identity]);
 
         $this->subject = $this->messenger->subject($identity);
         $response = $this->subject->read();
@@ -84,7 +84,7 @@ class Tenant implements Contract {
 
         $this->identity = $identity;
 
-        $this->fire('tenant.identity.set', ['identity' => $this->identity]);
+        $this->fire('tenant.identity.set', ['identity' => $identity]);
 
         return $this;
     }
@@ -102,62 +102,11 @@ class Tenant implements Contract {
 
     public function customize(array $customPackage = []) {
 
-        $persisted = $this->subject->readPackage();
+        $this->fire('tenant.customize.begin', ['identity' => $this->identity]);
 
-        foreach ($customPackage as $key => $value) {
+        $this->subject->customize($customPackage);
 
-            $writable = false;
-
-            // se esiste la voce...
-            if (isset($persisted[$key])) {
-
-                // ...assicurati che sia customizzabile, altrimenti ignorala
-                if ($persisted[$key]['__isCustomizable'] ?? false) {
-
-                    // se il valore della nuova chiave è null, allora eliminala dal package
-                    if ($value === null) {
-                        unset($persisted[$key]);
-                    }
-
-                    else {
-                        $writable = true;
-                    }
-
-                }
-
-            }
-
-            // se non esiste, creala contrassegnandola come customizzabile
-            else {
-                $writable = true;
-            }
-
-            // se quanto passato è scrivibile, procedi:
-            if ($writable) {
-
-                if (is_array($value)) {
-                    $payload = ['package' => $value];
-                }
-
-                else if (is_scalar($value)) {
-                    $payload = ['raw' => $value];
-                }
-
-                else if (is_object($value)) {
-                    $payload = ['serialized' => serialize($value)];
-                }
-
-                else {
-                    throw new TenantException('Unhandled payload type for persistence');
-                }
-
-                $persisted[$key] = ['__isCustomizable' => true] + $payload;
-
-            }
-
-        }
-
-        $this->subject->write($persisted);
+        $this->fire('tenant.customize.done', ['identity' => $this->identity]);
 
         return $this;
 
@@ -165,22 +114,19 @@ class Tenant implements Contract {
 
     public function alignMigrations() {
 
-        $tenant = $this->detectMigrationPoint();
-        $remote = $this->subject->read()['migration'];
+        $current = $this->detectMigrationPoint();
+        $status = $this->subject->read()['migration'];
 
-        if ($remote !== $tenant) {
+        if ($status !== $current) {
 
             $this->fire('tenant.migrating', ['identity' => $this->identity]);
 
-            // TODO: riattivare e testare...
-            $this->fire('TODO.tenant.suspend');
-            $this->fire('TODO.migrate');
-            $this->fire('TODO.tenant.wakeup');
-            // $this->subject->suspend();
-            // $this->kernel->call('migrate', ['--force' => true]);
-            // $this->subject->wakeup();
+            $this->subject->suspend();
+            $this->fire('migrate', ['identity' => $this->identity]);
+            $this->kernel->call('migrate', ['--force' => true]);
+            $this->subject->wakeup();
 
-            $remote = $this->subject->setMigrationPoint($this->detectMigrationPoint());
+            $status = $this->subject->setMigrationPoint($this->detectMigrationPoint());
 
             $this->fire('tenant.migrated', ['identity' => $this->identity]);
 
@@ -206,7 +152,8 @@ class Tenant implements Contract {
 
             // se arrivo qui, allora vuol dire che non esiste la tabella cercata ('migrations'),
             // ragion per cui è SICURO che sul database corrente debba essere lanciato il migrate.
-            return null;
+            $migrationsList = [];
+            $this->kernel->call('migrate:install');
         }
 
         return md5(json_encode($migrationsList));
@@ -267,10 +214,13 @@ class Tenant implements Contract {
         $credentials = [
             'driver' => $databaseServer['driver'] ?? 'mysql',
             'host' => $databaseServer['host'] ?? ('mariadb'.random_int(1,5).'.example.com'),
+            // 'host' => $databaseServer['host'] ?? 'mariadb',
             'port' => $databaseServer['port'] ?? '3306',
-            'database' => 'DB_' . strtoupper(join('_',$pathway['resourceId'])),
+            'database' => strtoupper(join('_',$pathway['resourceId'])) . '_DB',
             'username' => 'user_' . strtoupper(array_last($pathway['normalized'])) . '_' . strtolower(str_random(4)),
             'password' => str_random(16),
+            // 'username' => 'root',
+            // 'password' => 'root',
         ];
 
         $this->fire('tenant.database.created', ['identity' => $identity, 'databaseServer' => $databaseServer]);

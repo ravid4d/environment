@@ -91,9 +91,10 @@ class Tenancy {
 
         // TODO: mettere altri/migliori controlli sul nome...
 
-        if ($name === 'set'){
-            return $this->setIdentity(...$args);
-        }
+        // if ($name === 'set'){
+        //     return $this->setIdentity(...$args);
+        // }
+
         if (substr($name, 0, 3) !== 'use') {
             throw new BadMethodCallException("Invalid method ".__CLASS__."->$name() called");
         }

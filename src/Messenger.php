@@ -84,7 +84,7 @@ class Messenger implements Contract {
 
         $path = $this->pathfinder->for($breadcrumbs);
 
-        return $path + ['uid' => $this->conciergeService->generate('short', $path['hashable'])];
+        return $path + ['uid' => $this->conciergeService->generate('short', $path['resourceId'])];
 
     }
 
@@ -173,27 +173,18 @@ class Messenger implements Contract {
      */
     public function read(...$breadcrumbs) : array {
 
-        $shortcuts = $this->usePathfinderFor($breadcrumbs);
-
-        // legge dalla cache di uid o vi scrive il record ottenuto dal lockerService
-        $retained = $this->cache->remember($shortcuts['uid'], $this->config['cache']['remember'], function () use ($shortcuts) {
-            $body = $this->lockerService->get(['resourceId' => $shortcuts['resourceId']]);
-            return $this->retain($body, $shortcuts['hashable']);
-        });
-
-        // decodifica il record
-        $disclosed = $this->disclose($retained, $shortcuts['hashable']);
+        $raw = $this->getResource(...$breadcrumbs);
 
         return [
-            'uid' => $shortcuts['uid'],
-            'disclosed' => $disclosed,
-            'migration' => $retained['payload']['migration'],
-            'active' => !!$retained['payload']['active'],
+            'uid' => $raw['uid'],
+            'disclosed' => $raw['disclosed'],
+            'migration' => $raw['retained']['payload']['migration'],
+            'active' => !!$raw['retained']['payload']['active'],
         ];
 
     }
 
-    public function readPackage(...$breadcrumbs) : array {
+    public function getResource(...$breadcrumbs) : array {
 
         $shortcuts = $this->usePathfinderFor($breadcrumbs);
 
@@ -204,7 +195,83 @@ class Messenger implements Contract {
         });
 
         // decodifica il record
-        return $disclosed = $this->disclose($retained, $shortcuts['hashable']);
+        return $output = [
+            'uid' => $shortcuts['uid'],
+            'resourceId' => $shortcuts['resourceId'],
+            'retained' => $retained,
+            'disclosed' => $this->disclose($retained, $shortcuts['hashable']),
+        ];
+
+    }
+
+    public function customize($customPackage = null, ...$breadcrumbs) : array {
+
+        $resource = $this->getResource(...$breadcrumbs);
+
+        $persisted = $resource['disclosed'];
+
+        $this->fire('messenger.customize.begin', [ 'resourceId' => $resource['resourceId'] ]);
+
+        foreach ($customPackage as $key => $value) {
+
+            $this->fire('messenger.customize.iterating', ['key' => $key]);
+
+            $writable = false;
+
+            // se esiste la voce...
+            if (isset($persisted[$key])) {
+
+                // ...assicurati che sia customizzabile, altrimenti ignorala
+                if ($persisted[$key]['__isCustomizable'] ?? false) {
+
+                    // se il valore della nuova chiave è null, allora eliminala dal package
+                    if ($value === null) {
+                        unset($persisted[$key]);
+                        $this->fire('messenger.customize.deleted', ['key' => $key]);
+                    }
+
+                    else {
+                        $writable = true;
+                    }
+
+                }
+
+            }
+
+            // se non esiste, creala contrassegnandola come customizzabile
+            else {
+                $writable = true;
+            }
+
+            // se quanto passato è scrivibile, procedi:
+            if ($writable) {
+
+                if (is_array($value)) {
+                    $payload = ['package' => $value];
+                }
+
+                else if (is_scalar($value)) {
+                    $payload = ['raw' => $value];
+                }
+
+                else if (is_object($value)) {
+                    $payload = ['serialized' => serialize($value)];
+                }
+
+                else {
+                    throw new TenantException('Unhandled payload type for persistence');
+                }
+
+                $persisted[$key] = ['__isCustomizable' => true] + $payload;
+                $this->fire('messenger.customize.set', [ 'entry' => [ $key => $persisted[$key] ] ]);
+
+            }
+
+        }
+
+        $this->fire('messenger.customize.end', [ 'resourceId' => $resource['resourceId'] ]);
+
+        return $this->write($persisted, ...$breadcrumbs);
 
     }
 
@@ -218,6 +285,8 @@ class Messenger implements Contract {
     public function write($package = null, ...$breadcrumbs) : array {
 
         $shortcuts = $this->usePathfinderFor($breadcrumbs);
+
+        $this->fire('messenger.write.begin', [ 'resourceId' => $shortcuts['resourceId'] ]);
 
         // cifra il dato e lo cancella dalla cache, cosicché le successive richieste siano forzate
         // a richiederne una copia aggiornata
@@ -234,6 +303,8 @@ class Messenger implements Contract {
 
         // decodifica il record
         $disclosed = $this->disclose($retained, $shortcuts['hashable']);
+
+        $this->fire('messenger.write.end', [ 'resourceId' => $shortcuts['resourceId'] ]);
 
         return [
             'uid' => $shortcuts['uid'],
@@ -253,10 +324,15 @@ class Messenger implements Contract {
     public function delete(...$breadcrumbs) : bool {
 
         $shortcuts = $this->usePathfinderFor($breadcrumbs);
+        $this->fire('messenger.delete.begin', [ 'resourceId' => $shortcuts['resourceId'] ]);
+
         $this->lockerService->delete(['resourceId' => $shortcuts['resourceId']]);
 
         // IMPORTANT: cancello la cache attuale del tenant!
         $this->cache->forget($shortcuts['uid']);
+
+        $this->fire('messenger.delete.end', [ 'resourceId' => $shortcuts['resourceId'] ]);
+
         return true;
 
     }
@@ -271,10 +347,14 @@ class Messenger implements Contract {
     public function suspend(...$breadcrumbs) : bool {
 
         $shortcuts = $this->usePathfinderFor($breadcrumbs);
+        $this->fire('messenger.suspend.begin', [ 'resourceId' => $shortcuts['resourceId'] ]);
+
         $action = $this->lockerService->post(['resourceId' => $shortcuts['resourceId'], 'sub' => ['unsetActive']], null);
 
         // IMPORTANT: cancello la cache attuale del tenant!
         $this->cache->forget($shortcuts['uid']);
+
+        $this->fire('messenger.suspend.end', [ 'resourceId' => $shortcuts['resourceId'] ]);
 
         return true;
 
@@ -289,10 +369,14 @@ class Messenger implements Contract {
     public function wakeup(...$breadcrumbs) : bool {
 
         $shortcuts = $this->usePathfinderFor($breadcrumbs);
+        $this->fire('messenger.wakeup.begin', [ 'resourceId' => $shortcuts['resourceId'] ]);
+
         $action = $this->lockerService->post(['resourceId' => $shortcuts['resourceId'], 'sub' => ['setActive']], null);
 
         // IMPORTANT: cancello la cache attuale del tenant!
         $this->cache->forget($shortcuts['uid']);
+
+        $this->fire('messenger.wakeup.end', [ 'resourceId' => $shortcuts['resourceId'] ]);
 
         return true;
 
@@ -301,6 +385,7 @@ class Messenger implements Contract {
     public function setMigrationPoint(?string $migration, ...$breadcrumbs) : bool {
 
         $shortcuts = $this->usePathfinderFor($breadcrumbs);
+        $this->fire('messenger.suspend.begin', [ 'resourceId' => $shortcuts['resourceId'] ]);
         $action = $this->lockerService->post(['resourceId' => $shortcuts['resourceId'], 'sub' => ['setMigration']], $migration);
 
         // IMPORTANT: cancello la cache attuale del tenant!
