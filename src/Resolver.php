@@ -5,47 +5,36 @@ namespace AmcLab\Tenancy;
 use AmcLab\Tenancy\Contracts\Hook;
 use AmcLab\Tenancy\Contracts\Resolver as Contract;
 use AmcLab\Tenancy\Exceptions\ResolverException;
-use AmcLab\Tenancy\Traits\HasConfigTrait;
 use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 
 class Resolver implements Contract {
 
     use HasEventsDispatcherTrait;
-    use HasConfigTrait;
 
     protected $app;
+    protected $config;
     protected $hooks;
 
-    public function __construct(Application $app, Dispatcher $events) {
+    public function __construct(Application $app, Repository $configRepository, Dispatcher $events) {
         $this->app = $app;
+        $this->config = $configRepository->get('tenancy.resolver');
         $this->setEventsDispatcher($events);
     }
 
-    public function boot(array $hooks = []) {
-        // TODO: studiare se è possibile/sensato/opportuno spostare questo nel boot
-        // (vedi problema iniezione automatica di ConnectionResolverInstance)
+    public function bootstrap(array $hooks = []) {
 
         if ($this->hooks) {
-            throw new ResolverException('Resolver already booted');
+            throw new ResolverException('Resolver already bootstrapped');
         }
 
         $this->hooks = [];
         $list = $hooks ?: $this->config['hooks'];
 
         foreach ($list as $hook) {
-
-            $with = [];
-
-            if ($dependencies = $hook[1] ?? []) {
-                foreach ($dependencies as $dependency) {
-                    $with[] = $this->app->make($dependency);
-                }
-            }
-
-            $this->hooks[] = $this->app->make($hook[0], $with);
-
+            $this->hooks[] = $this->app->make($hook);
         }
 
         return $this;
@@ -56,13 +45,27 @@ class Resolver implements Contract {
     }
 
     public function get($entryName) {
+
+        if (!$this->hooks) {
+            throw new ResolverException('Resolver needs to be bootstrapped');
+        }
+
         $entry = array_filter($this->hooks, function($v) use ($entryName){
             return $v->getEntry() === $entryName;
         }) ?? [];
+
         return array_pop($entry);
     }
 
+    public function use($entryName) {
+        return $this->get($entryName)->use();
+    }
+
     public function populate(array $package = [], array $params = []) : void {
+
+        if (!$this->hooks) {
+            throw new ResolverException('Resolver needs to be bootstrapped');
+        }
 
         foreach ($this->hooks as &$hook) {
 
@@ -78,6 +81,10 @@ class Resolver implements Contract {
     }
 
     public function purge() : void {
+
+        if (!$this->hooks) {
+            throw new ResolverException('Resolver needs to be bootstrapped');
+        }
 
         foreach ($this->hooks as &$hook) {
             $hook->purge();

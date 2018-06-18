@@ -1,6 +1,7 @@
 <?php
 namespace AmcLab\Tenancy\Providers;
 
+use AmcLab\Baseline\Contracts\PackageStore;
 use AmcLab\Tenancy\Contracts\Resolver;
 use AmcLab\Tenancy\Contracts\Store;
 use AmcLab\Tenancy\Contracts\Tenancy;
@@ -11,39 +12,27 @@ use Illuminate\Support\ServiceProvider;
 class TenancyServiceProvider extends ServiceProvider
 {
 
-    public function boot()
+    public function boot(Tenancy $tenancy)
     {
         $this->publishes(array(
             __DIR__.'../../config/tenancy.php' => config_path('tenancy.php'),
         ), 'config');
+
+        $tenancy->getTenant()->setConnectionResolver($this->app['db']);
+
+        $tenancy->getTenant()->getResolver()->bootstrap();
+
     }
 
     public function register()
     {
         $config = $this->app['config']['tenancy'];
 
-        $this->app->bind(Store::class, $this->app['config']['tenancy.store']);
-        $this->app->bind(Resolver::class, function($app) use ($config) {
-            return $app->make(\AmcLab\Tenancy\Resolver::class)
-            ->setConfig($config['resolver'])
-            ->boot();
-        });
+        $this->app->bind(PackageStore::class, $config['package-store']);
 
-        $this->app->bind(AuthorizedClientFactory::class, function($app) use ($config) {
-            return $app->make(\AmcLab\Tenancy\Factories\AuthorizedClientFactory::class)
-            ->create($config['messenger']['locker']['client']);
-            ;
-        });
-
-        $this->app->bind(Tenant::class, function($app) use ($config) {
-            return $app->make(\AmcLab\Tenancy\Tenant::class, ['store' => $app->make(Store::class)])
-            ->setConfig($config['tenant'])
-            ->setConnectionResolver($app['db']);
-        });
-
-        $this->app->singleton(Tenancy::class, function($app) {
-            return $app->make(\AmcLab\Tenancy\Tenancy::class);
-        });
+        $this->app->bind(Resolver::class, \AmcLab\Tenancy\Resolver::class);
+        $this->app->bind(Tenant::class, \AmcLab\Tenancy\Tenant::class);
+        $this->app->singleton(Tenancy::class, \AmcLab\Tenancy\Tenancy::class);
         $this->app->alias(Tenancy::class, 'tenancy');
 
     }

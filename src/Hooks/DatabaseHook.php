@@ -10,12 +10,13 @@ use Illuminate\Contracts\Config\Repository as ConfigRepository;
 
 class DatabaseHook extends AbstractHook implements Contract {
 
-    protected $connection;
+    //protected $connection;
     protected $configRepository;
     protected $concreteParams;
+    protected $resolver;
 
-    public function __construct(\Illuminate\Database\DatabaseManager $connection, ConfigRepository $configRepository) {
-        $this->connection = $connection;
+    public function __construct(ConfigRepository $configRepository) {
+        //$this->connection = $connection;
         $this->configRepository = $configRepository;
         parent::__construct();
     }
@@ -23,6 +24,7 @@ class DatabaseHook extends AbstractHook implements Contract {
     protected function concrete(array $config = [], array $concreteParams = []) {
 
         $this->concreteParams = $concreteParams['database'];
+        $this->resolver = $concreteParams['database']['resolver'];
 
         $connection = $this->concreteParams['connection'];
         $autoconnect = $this->concreteParams['autoconnect'] ?? false;
@@ -36,7 +38,8 @@ class DatabaseHook extends AbstractHook implements Contract {
 
         if ($autoconnect) {
             // chiudo quella che attualmente è la connessione di default
-            $this->connection->purge();
+            //$this->connection->purge();
+            $this->resolver->purge();
         }
 
         if ($makeDefault) {
@@ -49,26 +52,23 @@ class DatabaseHook extends AbstractHook implements Contract {
 
         if ($autoconnect) {
             // ristabilisco la connessione
-            return $this->connection->reconnect($connection);
+            // return $this->connection->reconnect($connection);
+            return $this->resolver->reconnect($connection);
         }
         else {
-            return $this->connection->connection($connection);
+            // return $this->connection->connection($connection);
+            return $this->resolver->connection($connection);
         }
     }
 
     public function destroy() {
 
-        // prendo la configurazione dei database di Laravel
-        //$base = $this->configRepository->get('database');
-
         // chiudo quella che attualmente è la connessione di default
         if ($this->concreteParams['autoconnect'] ?? false) {
-            // $this->connection->purge($base['default']);
-            $this->connection->purge($this->concreteParams['connection']);
+            //$this->connection->purge($this->concreteParams['connection']);
         }
-
-        // // REVIEW: elimino la password dalla config. serve davvero eliminare i valori dalla config?
-        // $this->configRepository->set('database.connections.' . $base['default'] . '.password', null);
+        $this->resolver->purge($this->concreteParams['connection']);
+        $this->resolver = null;
 
     }
 

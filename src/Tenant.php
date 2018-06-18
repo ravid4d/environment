@@ -2,19 +2,15 @@
 
 namespace AmcLab\Tenancy;
 
-use AmcLab\Tenancy\Contracts\Resolver;
+use AmcLab\Baseline\Contracts\PackageStore;
 use AmcLab\Tenancy\Contracts\Tenant as Contract;
 use AmcLab\Tenancy\Exceptions\TenantException;
-use AmcLab\Tenancy\Traits\HasConfigTrait;
 use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
-use BadMethodCallException;
-use Carbon\Carbon;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\QueryException;
-use InvalidArgumentException;
 
 /**
  * Questa classe implementa le singole operazioni dei tenant.
@@ -22,7 +18,8 @@ use InvalidArgumentException;
 class Tenant implements Contract {
 
     use HasEventsDispatcherTrait;
-    use HasConfigTrait;
+
+    protected $config;
 
     protected $store;
     protected $resolver;
@@ -33,7 +30,8 @@ class Tenant implements Contract {
 
     protected $identity;
 
-    public function __construct($store, Resolver $resolver, Kernel $kernel, Dispatcher $events) {
+    public function __construct(Repository $configRepository, PackageStore $store, Resolver $resolver, Kernel $kernel, Dispatcher $events) {
+        $this->config = $configRepository->get('tenancy.tenant');
         $this->store = $store;
         $this->resolver = $resolver;
         $this->kernel = $kernel;
@@ -43,6 +41,10 @@ class Tenant implements Contract {
     public function setConnectionResolver(ConnectionResolverInterface $db) {
         $this->db = $db;
         return $this;
+    }
+
+    public function getConnectionResolver() {
+        return $this->db;
     }
 
     public function getSubject() {
@@ -58,6 +60,10 @@ class Tenant implements Contract {
     }
 
     public function setIdentity($identity, $concreteParams = []) {
+        if (!$this->db) {
+            throw new TenantException('Database resolver must be set');
+        }
+
         $this->fire('tenant.identity.setting', ['identity' => $identity]);
 
         $this->subject = $this->store->subject($identity);
@@ -66,6 +72,7 @@ class Tenant implements Contract {
         $this->resolver->populate($response['disclosed'], $concreteParams + [
             'database' => [
                 'connection' => 'tenant_' . str_random(8),
+                'resolver' => $this->db,
             ]
         ]);
 

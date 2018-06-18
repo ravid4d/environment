@@ -2,19 +2,23 @@
 
 namespace AmcLab\Tenancy;
 
+use AmcLab\Tenancy\Contracts\Tenancy as Contract;
 use AmcLab\Tenancy\Contracts\Tenant;
 use AmcLab\Tenancy\Exceptions\TenancyException;
 use BadMethodCallException;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 
-class Tenancy {
+class Tenancy implements Contract {
 
     protected $tenant;
     protected $app;
+    protected $config;
 
-    public function __construct(Tenant $tenant, Application $app) {
+    public function __construct(Repository $configRepository, Tenant $tenant, Application $app) {
+        $this->config = $configRepository->get('tenancy.singleton');
         $this->tenant = $tenant;
-        $this->app = $app;
+        $this->app = $app; // TODO: trovare un modo elegante per farla sparire
     }
 
     public function getTenant() {
@@ -38,6 +42,7 @@ class Tenancy {
                 'connection' => $connection = 'currentTenant',
                 'autoconnect' => true,
                 'makeDefault' => true,
+                'resolver' => $this->app->make('db'),
             ]
         ])
         ->alignMigrations($connection)
@@ -64,7 +69,11 @@ class Tenancy {
         }
 
         $newTenant = $this->app->make(Tenant::class)
-        ->createIdentity($newIdentity);
+        ->setConnectionResolver($this->app->make('db'));
+
+        $newTenant->getResolver()->bootstrap();
+
+        $newTenant->createIdentity($newIdentity);
 
         $tenant = $this->setIdentity($newIdentity);
 
