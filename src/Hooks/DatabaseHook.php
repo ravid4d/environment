@@ -13,10 +13,9 @@ class DatabaseHook extends AbstractHook implements Contract {
     //protected $connection;
     protected $configRepository;
     protected $concreteParams;
-    protected $resolver;
+    protected $connectionResolver;
 
     public function __construct(ConfigRepository $configRepository) {
-        //$this->connection = $connection;
         $this->configRepository = $configRepository;
         parent::__construct();
     }
@@ -24,7 +23,7 @@ class DatabaseHook extends AbstractHook implements Contract {
     protected function concrete(array $config = [], array $concreteParams = []) {
 
         $this->concreteParams = $concreteParams['database'];
-        $this->resolver = $concreteParams['database']['resolver'];
+        $this->connectionResolver = $concreteParams['database']['resolver'];
 
         $connection = $this->concreteParams['connection'];
         $autoconnect = $this->concreteParams['autoconnect'] ?? false;
@@ -38,8 +37,7 @@ class DatabaseHook extends AbstractHook implements Contract {
 
         if ($autoconnect) {
             // chiudo quella che attualmente è la connessione di default
-            //$this->connection->purge();
-            $this->resolver->purge();
+            $this->connectionResolver->purge();
         }
 
         if ($makeDefault) {
@@ -50,25 +48,18 @@ class DatabaseHook extends AbstractHook implements Contract {
         // sovrascrivo i dati di connessione sul relativo record
         $this->configRepository->set('database.connections.' . $connection, $newConfig);
 
+        // restituisco la connessione usata dall'hook
         if ($autoconnect) {
-            // ristabilisco la connessione
-            // return $this->connection->reconnect($connection);
-            return $this->resolver->reconnect($connection);
+            return $this->connectionResolver->reconnect($connection);
         }
         else {
-            // return $this->connection->connection($connection);
-            return $this->resolver->connection($connection);
+            return $this->connectionResolver->connection($connection);
         }
     }
 
     public function destroy() {
 
-        // chiudo quella che attualmente è la connessione di default
-        if ($this->concreteParams['autoconnect'] ?? false) {
-            //$this->connection->purge($this->concreteParams['connection']);
-        }
-        $this->resolver->purge($this->concreteParams['connection']);
-        $this->resolver = null;
+        $this->connectionResolver->purge($this->concreteParams['connection']);
 
     }
 

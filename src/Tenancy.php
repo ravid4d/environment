@@ -39,14 +39,14 @@ class Tenancy implements Contract {
 
         return $this->tenant->setIdentity($identity, [
             'database' => [
-                'connection' => $connection = 'currentTenant',
+                'connection' => $connectionName = 'currentTenant',
                 'autoconnect' => true,
                 'makeDefault' => true,
                 'resolver' => $this->app->make('db'),
             ]
         ])
-        ->alignMigrations($connection)
-        ->alignSeeds($connection);
+        ->alignMigrations()
+        ->alignSeeds();
 
     }
 
@@ -62,7 +62,7 @@ class Tenancy implements Contract {
         return $this->tenant->getIdentity();
     }
 
-    public function createIdentity($newIdentity) {
+    public function createIdentity($newIdentity, $databaseServer = []) {
 
         if ($this->getIdentity()){
             throw new TenancyException('Tenancy identity is currently SET');
@@ -73,7 +73,9 @@ class Tenancy implements Contract {
 
         $newTenant->getResolver()->bootstrap();
 
-        $newTenant->createIdentity($newIdentity);
+        $newTenant->createIdentity($newIdentity, $databaseServer);
+
+        unset($newTenant);
 
         $tenant = $this->setIdentity($newIdentity);
 
@@ -86,13 +88,13 @@ class Tenancy implements Contract {
 
     }
 
-    public function customize(array $customPackage) {
+    public function update(array $customPackage) {
 
         if (!$this->getIdentity()){
             throw new TenancyException('Tenancy identity must be SET');
         }
 
-        return $this->tenant->customize($customPackage);
+        return $this->tenant->update($customPackage);
 
     }
 

@@ -2,6 +2,7 @@
 namespace AmcLab\Tenancy\Providers;
 
 use AmcLab\Baseline\Contracts\PackageStore;
+use AmcLab\Tenancy\Contracts\MigrationManager;
 use AmcLab\Tenancy\Contracts\Resolver;
 use AmcLab\Tenancy\Contracts\Store;
 use AmcLab\Tenancy\Contracts\Tenancy;
@@ -28,6 +29,7 @@ class TenancyServiceProvider extends ServiceProvider
     {
         $config = $this->app['config']['tenancy'];
 
+        $this->app->bind(MigrationManager::class, \AmcLab\Tenancy\MigrationManager::class);
         $this->app->bind(PackageStore::class, $config['package-store']);
 
         $this->app->bind(Resolver::class, \AmcLab\Tenancy\Resolver::class);
