@@ -5,7 +5,7 @@ namespace AmcLab\Tenancy;
 use AmcLab\Tenancy\Contracts\Hook;
 use AmcLab\Tenancy\Contracts\Resolver as Contract;
 use AmcLab\Tenancy\Exceptions\ResolverException;
-use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
+use AmcLab\Baseline\Traits\HasEventsDispatcherTrait;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;

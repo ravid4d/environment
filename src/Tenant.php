@@ -5,7 +5,7 @@ namespace AmcLab\Tenancy;
 use AmcLab\Baseline\Contracts\PackageStore;
 use AmcLab\Tenancy\Contracts\Tenant as Contract;
 use AmcLab\Tenancy\Exceptions\TenantException;
-use AmcLab\Tenancy\Traits\HasEventsDispatcherTrait;
+use AmcLab\Baseline\Traits\HasEventsDispatcherTrait;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Events\Dispatcher;
