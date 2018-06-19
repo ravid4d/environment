@@ -34,6 +34,8 @@ class MigrationManager implements Contract {
 
     public function getLocalStatus(ConnectionInterface $localConnection) {
 
+        // TODO: AGGIUNGERE CACHE!!!!
+
         try {
             $last = $localConnection->table('migrations')->orderBy('id', 'desc')->first()->migration;
         }
