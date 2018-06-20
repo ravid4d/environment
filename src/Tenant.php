@@ -133,14 +133,18 @@ class Tenant implements Contract {
             catch (Exception $e) {
                 $this->fire('tenant.alignMigration.failed', ['identity' => $this->identity, 'exception' => json_encode($e)]);
                 $postMigrationPayload = ['failed'=> true];
-                $quits = false;
+                $quitReason = $e;
             }
 
             $this->store->request('endMigrate', $postMigrationPayload);
 
+            if ($quitReason ?? false) {
+                throw new TenantException('Migration failed. Tenant marked as *NOT* ACTIVE!', 500, $quitReason);
+            }
+
         }
 
-        return isset($quits) ? $this->unsetIdentity() : $this;
+        return $this; // isset($quits) ? $this->unsetIdentity() : $this;
     }
 
     public function alignSeeds() {

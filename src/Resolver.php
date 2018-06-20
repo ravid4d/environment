@@ -61,6 +61,10 @@ class Resolver implements Contract {
         return $this->get($entryName)->use();
     }
 
+    public function generate($entryName) {
+        return $this->get($entryName)->generate();
+    }
+
     public function populate(array $package = [], array $params = []) : void {
 
         if (!$this->hooks) {
