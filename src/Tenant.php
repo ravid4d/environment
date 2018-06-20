@@ -28,8 +28,6 @@ class Tenant implements Contract {
     protected $persister;
     protected $db;
 
-    protected $subject;
-
     protected $identity;
 
     public function __construct(Repository $configRepository, MigrationManager $migrationManager, PackageStore $store, Resolver $resolver, PersistenceManager $persister, Dispatcher $events) {
@@ -50,8 +48,8 @@ class Tenant implements Contract {
         return $this->db;
     }
 
-    public function getSubject() {
-        return $this->subject;
+    public function getStore() {
+        return $this->store;
     }
 
     public function getResolver() {
@@ -69,8 +67,8 @@ class Tenant implements Contract {
 
         $this->fire('tenant.setIdentity', ['identity' => $identity]);
 
-        $this->subject = $this->store->setSubject($identity);
-        $response = $this->subject->read();
+        $this->store->setSubject($identity);
+        $response = $this->store->read();
 
         $this->resolver->populate($response['disclosed'], $concreteParams + [
             'database' => [
@@ -89,7 +87,6 @@ class Tenant implements Contract {
 
         $this->resolver->purge();
         $this->store->unsetSubject();
-        $this->subject = null;
         $this->identity = null;
 
         return $this;
@@ -99,7 +96,7 @@ class Tenant implements Contract {
 
         $this->fire('tenant.update', ['identity' => $this->identity]);
 
-        $this->subject->update($customPackage);
+        $this->store->update($customPackage);
 
         return $this;
 
@@ -109,7 +106,7 @@ class Tenant implements Contract {
 
         $localConnection = $this->resolver->use('database');
 
-        $localMigrationStatus = $this->subject->read()['migration'];
+        $localMigrationStatus = $this->store->read()['migration'];
 
         if ($localMigrationStatus === null) {
             $this->migrationManager->install($localConnection);
@@ -121,20 +118,19 @@ class Tenant implements Contract {
 
             $this->fire('tenant.alignMigration.needed', ['identity' => $this->identity]);
 
-            $this->subject->request('suspend');
+            $this->store->request('beginMigrate');
 
             try {
                 $newStatus = $this->migrationManager->attempt($localConnection);
             }
 
             catch (QueryException $e) {
-                $this->fire('tenant.alignMigration.failed', ['identity' => $this->identity, 'exception' => $e]);
-                // $this->subject->request('wakeup');
+                $this->fire('tenant.alignMigration.failed', ['identity' => $this->identity, 'exception' => json_encode($e)]);
+                $this->store->request('endMigrate', ['migration' => 123]);
                 return $this->unsetIdentity();
             }
 
-            $this->subject->request('setMigrationPoint', ['migration' => $newStatus]);
-            $this->subject->request('wakeup');
+            $this->store->request('endMigrate', []);
 
         }
 
@@ -152,14 +148,11 @@ class Tenant implements Contract {
             throw new TenantException('Cannot create a Tenant while another Tenant is identified');
         }
 
-        $this->subject = $this->store->setSubject($identity);
-
-        $hooks = $this->resolver->getHooks();
-
-        $persister = $this->persister->setServer($databaseServer);
-
         $this->fire('tenant.createIdentity', ['identity' => $identity, 'databaseServer' => $databaseServer]);
 
+        $this->store->setSubject($identity);
+        $hooks = $this->resolver->getHooks();
+        $persister = $this->persister->setServer($databaseServer);
         $this->store->create($identity, $hooks, $persister);
 
         return $this;
