@@ -7,6 +7,7 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\QueryException;
 
 class MigrationManager implements Contract {
 
@@ -31,35 +32,34 @@ class MigrationManager implements Contract {
         return md5(array_last(array_keys($files)));
     }
 
-
     public function getLocalStatus(ConnectionInterface $localConnection) {
 
         // TODO: AGGIUNGERE CACHE!!!!
 
         try {
-            $last = $localConnection->table('migrations')->orderBy('id', 'desc')->first()->migration;
+            $last = md5($this->detectCurrentPoint($localConnection));
         }
 
-        // catturo l'eventuale QueryException
         catch (QueryException $e) {
-
             if (!$e->getCode() === '42S02') {
                 throw $e;
             }
-
-            // se arrivo qui, allora vuol dire che non esiste la tabella cercata ('migrations'),
-            // ragion per cui è SICURO che sul database corrente debba essere installato il
-            // modulo (e deve successivamente essere lanciato il comando migrate).
-
-            $this->install($localConnection);
-            $last = '';
+            $last = null;
         }
 
-        return md5($last);
+        return $last;
 
     }
 
+    public function detectCurrentPoint(ConnectionInterface $localConnection) {
+        return $localConnection->table('migrations')->orderBy('id', 'desc')->first()->migration ?? null;
+    }
+
     public function install(ConnectionInterface $localConnection) {
+
+        if ($this->getLocalStatus($localConnection)) {
+            return;
+        }
 
         $databaseConnectionName = $localConnection->getConfig()['name'];
 
