@@ -8,6 +8,7 @@ use AmcLab\Baseline\Traits\HasEventsDispatcherTrait;
 use AmcLab\Tenancy\Contracts\MigrationManager;
 use AmcLab\Tenancy\Contracts\Tenant as Contract;
 use AmcLab\Tenancy\Exceptions\TenantException;
+use Exception;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionResolverInterface;
@@ -118,23 +119,28 @@ class Tenant implements Contract {
 
             $this->fire('tenant.alignMigration.needed', ['identity' => $this->identity]);
 
+            if ($this->store->read()['migrating']) {
+                throw new TenantException('Someone else is migrating here or previous migration failed...');
+            }
+
             $this->store->request('beginMigrate');
 
             try {
                 $newStatus = $this->migrationManager->attempt($localConnection);
+                $postMigrationPayload = ['migration' => $newStatus];
             }
 
-            catch (QueryException $e) {
+            catch (Exception $e) {
                 $this->fire('tenant.alignMigration.failed', ['identity' => $this->identity, 'exception' => json_encode($e)]);
-                $this->store->request('endMigrate', ['migration' => 123]);
-                return $this->unsetIdentity();
+                $postMigrationPayload = ['failed'=> true];
+                $quits = false;
             }
 
-            $this->store->request('endMigrate', []);
+            $this->store->request('endMigrate', $postMigrationPayload);
 
         }
 
-        return $this;
+        return isset($quits) ? $this->unsetIdentity() : $this;
     }
 
     public function alignSeeds() {
