@@ -68,7 +68,7 @@ class Tenant implements Contract {
 
         $this->fire('tenant.setIdentity', ['identity' => $identity]);
 
-        $this->store->setSubject($identity);
+        $this->store->setPathway($identity);
         $response = $this->store->read();
 
         $this->resolver->populate($response['disclosed'], $concreteParams + [
@@ -87,7 +87,7 @@ class Tenant implements Contract {
         $this->fire('tenant.unsetIdentity', ['identity' => $this->identity]);
 
         $this->resolver->purge();
-        $this->store->unsetSubject();
+        $this->store->unsetPathway();
         $this->identity = null;
 
         return $this;
@@ -139,7 +139,7 @@ class Tenant implements Contract {
             $this->store->request('endMigrate', $postMigrationPayload);
 
             if ($quitReason ?? false) {
-                throw new TenantException('Migration failed. Tenant marked as *NOT* ACTIVE!', 500, $quitReason);
+                throw new TenantException('Migration failed. Tenant is now marked as *NOT* ACTIVE!', 500, $quitReason);
             }
 
         }
@@ -160,7 +160,7 @@ class Tenant implements Contract {
 
         $this->fire('tenant.createIdentity', ['identity' => $identity, 'databaseServer' => $databaseServer]);
 
-        $this->store->setSubject($identity);
+        $this->store->setPathway($identity);
         $hooks = $this->resolver->getHooks();
         $persister = $this->persister->setServer($databaseServer);
         $this->store->create($identity, $hooks, $persister);

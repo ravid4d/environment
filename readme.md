@@ -6,9 +6,7 @@ Gestione multi-tenant per i nuovi progetti AMC basati su Laravel.
 
 ## Todo
 
-- aggiungere altri eventi
-- implementare classi eventi
-- migliorare Messenger (in particolare ->subject()) e generalizzare i metodi
+- aggiungere altri eventi ed implementare classi eventi
 
 ## Requisiti
 
