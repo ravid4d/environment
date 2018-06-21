@@ -65,7 +65,7 @@ class MigrationManager implements Contract {
 
     protected function getStatusFromFilesystem($app) {
 
-        return $this->cache->rememberForever('appMigrationStatus', function() use ($app) {
+        return $this->cache->rememberForever('migration_status', function() use ($app) {
             $path = $app->databasePath() . DIRECTORY_SEPARATOR . 'migrations';
             $files = $app->make('migrator')->getMigrationFiles($path);
             return md5(array_last(array_keys($files)));

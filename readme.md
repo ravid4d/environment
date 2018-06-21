@@ -13,3 +13,12 @@ Gestione multi-tenant per i nuovi progetti AMC basati su Laravel.
 ## Installazione
 
 ## Documentazione
+
+## Note importanti
+
+Dopo un deploy, qualora siano presenti nuove migrations, è necessario eseguire:
+
+```bash
+php artisan cache:forget migration_status
+```
+
