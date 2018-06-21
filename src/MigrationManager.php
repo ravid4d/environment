@@ -14,6 +14,7 @@ class MigrationManager implements Contract {
     protected $app;
     protected $cache;
     protected $kernel;
+    protected $connection;
 
     public function __construct(Application $app, CacheRepository $cache, Kernel $kernel) {
         $this->app = $app;
@@ -21,9 +22,45 @@ class MigrationManager implements Contract {
         $this->kernel = $kernel;
     }
 
+    public function setConnection(ConnectionInterface $connection) {
+        $this->connection = $connection;
+        return $this;
+    }
+
+    public function unsetConnection() {
+        $this->connection = null;
+        return $this;
+    }
+
     public function getAppStatus(Application $app = null) {
         $app = $app ?? $this->app;
         return $this->getStatusFromFilesystem($app);
+    }
+
+    public function install() {
+
+        if ($this->getLocalStatus($this->connection)) {
+            return;
+        }
+
+        $databaseConnectionName = $this->connection->getConfig()['name'];
+
+        $this->kernel->call('migrate:install', [
+            '--database' => $databaseConnectionName,
+        ]);
+
+    }
+
+    public function attempt() {
+
+        $databaseConnectionName = $this->connection->getConfig()['name'];
+
+        $this->kernel->call('migrate', [
+            '--force' => true,
+            '--database' => $databaseConnectionName,
+        ]);
+
+        return $this->getLocalStatus($this->connection);
     }
 
     protected function getStatusFromFilesystem($app) {
@@ -35,16 +72,18 @@ class MigrationManager implements Contract {
         });
     }
 
-    public function getLocalStatus(ConnectionInterface $localConnection) {
+    public function getLocalStatus() {
 
         try {
-            $last = md5($this->detectCurrentPoint($localConnection));
+            $last = md5($this->detectCurrentPoint($this->connection));
         }
 
         catch (QueryException $e) {
             if (!$e->getCode() === '42S02') {
                 throw $e;
             }
+
+            // se arrivi qui, vuol dire che non esiste la tabella "migrations"!
             $last = null;
         }
 
@@ -52,35 +91,8 @@ class MigrationManager implements Contract {
 
     }
 
-    public function detectCurrentPoint(ConnectionInterface $localConnection) {
-        return $localConnection->table('migrations')->orderBy('id', 'desc')->first()->migration ?? null;
+    public function detectCurrentPoint() {
+        return $this->connection->table('migrations')->orderBy('id', 'desc')->first()->migration ?? null;
     }
-
-    public function install(ConnectionInterface $localConnection) {
-
-        if ($this->getLocalStatus($localConnection)) {
-            return;
-        }
-
-        $databaseConnectionName = $localConnection->getConfig()['name'];
-
-        $this->kernel->call('migrate:install', [
-            '--database' => $databaseConnectionName,
-        ]);
-
-    }
-
-    public function attempt(ConnectionInterface $localConnection) {
-
-        $databaseConnectionName = $localConnection->getConfig()['name'];
-
-        $this->kernel->call('migrate', [
-            '--force' => true,
-            '--database' => $databaseConnectionName,
-        ]);
-
-        return $this->getLocalStatus($localConnection);
-    }
-
 
 }

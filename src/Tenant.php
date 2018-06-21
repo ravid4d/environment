@@ -109,8 +109,10 @@ class Tenant implements Contract {
 
         $localMigrationStatus = $this->store->read()['migration'];
 
+        $this->migrationManager->setConnection($localConnection);
+
         if ($localMigrationStatus === null) {
-            $this->migrationManager->install($localConnection);
+            $this->migrationManager->install();
         }
 
         $appMigrationStatus = $this->migrationManager->getAppStatus();
@@ -126,7 +128,7 @@ class Tenant implements Contract {
             $this->store->request('beginMigrate');
 
             try {
-                $newStatus = $this->migrationManager->attempt($localConnection);
+                $newStatus = $this->migrationManager->attempt();
                 $postMigrationPayload = ['migration' => $newStatus];
             }
 
@@ -163,7 +165,7 @@ class Tenant implements Contract {
         $this->store->setPathway($identity);
         $hooks = $this->resolver->getHooks();
         $persister = $this->persister->setServer($databaseServer);
-        $this->store->create($identity, $hooks, $persister);
+        $this->store->create($hooks, $persister);
 
         return $this;
     }
