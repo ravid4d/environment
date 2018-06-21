@@ -2,9 +2,8 @@
 
 namespace AmcLab\Tenancy\Exceptions;
 
-class TenantException extends TenancyException {
+use RuntimeException;
 
-    public function __construct($message = null, $code = null, $previous = null) {
-        parent::__construct($message, $code, $previous);
-    }
+class TenantException extends RuntimeException {
+
 }
