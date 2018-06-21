@@ -12,12 +12,12 @@ use Illuminate\Database\QueryException;
 class MigrationManager implements Contract {
 
     protected $app;
-    protected $appCache;
+    protected $cache;
     protected $kernel;
 
-    public function __construct(Application $app, CacheRepository $appCache, Kernel $kernel) {
+    public function __construct(Application $app, CacheRepository $cache, Kernel $kernel) {
         $this->app = $app;
-        $this->appCache = $appCache;
+        $this->cache = $cache;
         $this->kernel = $kernel;
     }
 
@@ -27,14 +27,15 @@ class MigrationManager implements Contract {
     }
 
     protected function getStatusFromFilesystem($app) {
-        $path = $app->databasePath() . DIRECTORY_SEPARATOR . 'migrations';
-        $files = $app->make('migrator')->getMigrationFiles($path);
-        return md5(array_last(array_keys($files)));
+
+        return $this->cache->rememberForever('appMigrationStatus', function() use ($app) {
+            $path = $app->databasePath() . DIRECTORY_SEPARATOR . 'migrations';
+            $files = $app->make('migrator')->getMigrationFiles($path);
+            return md5(array_last(array_keys($files)));
+        });
     }
 
     public function getLocalStatus(ConnectionInterface $localConnection) {
-
-        // TODO: AGGIUNGERE CACHE!!!!
 
         try {
             $last = md5($this->detectCurrentPoint($localConnection));
