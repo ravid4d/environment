@@ -69,7 +69,14 @@ class Tenant implements Contract {
         $this->fire('tenant.setIdentity', ['identity' => $identity]);
 
         $this->store->setPathway($identity);
-        $response = $this->store->read();
+
+        try {
+            $response = $this->store->read();
+        }
+        catch (Exception $e) {
+            $this->unsetIdentity();
+            throw $e;
+        }
 
         $this->resolver->populate($response['disclosed'], $concreteParams + [
             'database' => [

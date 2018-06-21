@@ -21,7 +21,7 @@ class Tenancy implements Contract {
         $this->app = $app; // TODO: trovare un modo elegante per farla sparire
     }
 
-    public function getTenant() {
+    public function getTenant() : Tenant {
         return $this->tenant;
     }
 
@@ -31,13 +31,13 @@ class Tenancy implements Contract {
      * @param string $identity
      * @return void
      */
-    public function setIdentity(string $identity) : Tenant {
+    public function setIdentity(string $identity) {
 
         if ($this->getIdentity()){
             throw new TenancyException('Tenancy identity is currently SET');
         }
 
-        return $this->tenant->setIdentity($identity, [
+        $this->tenant->setIdentity($identity, [
             'database' => [
                 'connection' => $connectionName = 'currentTenant',
                 'autoconnect' => true,
@@ -50,19 +50,17 @@ class Tenancy implements Contract {
 
     }
 
-    public function unsetIdentity() : Tenant {
+    public function unsetIdentity() {
         if ($this->getIdentity()){
             $this->tenant->unsetIdentity();
         }
-
-        return $this->tenant;
     }
 
     public function getIdentity() :? string {
         return $this->tenant->getIdentity();
     }
 
-    public function createIdentity($newIdentity, $databaseServer = []) {
+    public function createIdentity(string $newIdentity, $databaseServer = []) {
 
         if ($this->getIdentity()){
             throw new TenancyException('Tenancy identity is currently SET');
@@ -84,8 +82,6 @@ class Tenancy implements Contract {
         // $tenant->createUsers()....
         // bla bla bla
 
-        return $tenant;
-
     }
 
     public function update(array $customPackage) {
@@ -94,17 +90,11 @@ class Tenancy implements Contract {
             throw new TenancyException('Tenancy identity must be SET');
         }
 
-        return $this->tenant->update($customPackage);
-
     }
 
     public function __call($name, $args){
 
         // TODO: mettere altri/migliori controlli sul nome...
-
-        // if ($name === 'set'){
-        //     return $this->setIdentity(...$args);
-        // }
 
         if (substr($name, 0, 3) !== 'use') {
             throw new BadMethodCallException("Invalid method ".__CLASS__."->$name() called");
