@@ -7,6 +7,7 @@ Gestione multi-tenant per i nuovi progetti AMC basati su Laravel.
 ## Todo
 
 - aggiungere altri eventi ed implementare classi eventi
+- valutare generatore di database basato su classe messenger (sostituire dominio "tenant" con "server")
 
 ## Requisiti
 
