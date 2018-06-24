@@ -68,7 +68,7 @@ class Tenant implements Contract {
 
         $this->fire('tenant.setIdentity', ['identity' => $identity]);
 
-        $this->store->setPathway($identity);
+        $this->store->setPathway('tenant', $identity);
 
         try {
             $response = $this->store->read();
@@ -140,7 +140,7 @@ class Tenant implements Contract {
             }
 
             catch (Exception $e) {
-                $this->fire('tenant.alignMigration.failed', ['identity' => $this->identity, 'exception' => json_encode($e)]);
+                $this->fire('tenant.alignMigration.failed', ['identity' => $this->identity, 'exception' => $e]);
                 $postMigrationPayload = ['failed'=> true];
                 $quitReason = $e;
             }
@@ -169,7 +169,7 @@ class Tenant implements Contract {
 
         $this->fire('tenant.createIdentity', ['identity' => $identity, 'databaseServer' => $databaseServer]);
 
-        $this->store->setPathway($identity);
+        $this->store->setPathway('tenant', $identity);
         $hooks = $this->resolver->getHooks();
         $persister = $this->persister->setServer($databaseServer);
         $this->store->create($hooks, $persister);
