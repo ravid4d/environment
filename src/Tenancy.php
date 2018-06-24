@@ -34,10 +34,10 @@ class Tenancy implements Contract {
     public function setIdentity(string $identity) {
 
         if ($this->getIdentity()){
-            throw new TenancyException('Tenancy identity is currently SET');
+            throw new TenancyException('Tenancy identity is currently SET', 1001);
         }
 
-        $this->tenant->setIdentity($identity, [
+        return $this->tenant->setIdentity($identity, [
             'database' => [
                 'connection' => $connectionName = 'currentTenant',
                 'autoconnect' => true,
@@ -63,7 +63,7 @@ class Tenancy implements Contract {
     public function createIdentity(string $newIdentity, $databaseServer = []) {
 
         if ($this->getIdentity()){
-            throw new TenancyException('Tenancy identity is currently SET');
+            throw new TenancyException('Tenancy identity is currently SET', 1001);
         }
 
         $newTenant = $this->app->make(Tenant::class)
@@ -75,7 +75,7 @@ class Tenancy implements Contract {
 
         unset($newTenant);
 
-        $tenant = $this->setIdentity($newIdentity);
+        return $tenant = $this->setIdentity($newIdentity);
 
         // TODO: factories tabelle utenti, ruoli, ecc...
         // $tenant->createBaseTables()
@@ -87,8 +87,21 @@ class Tenancy implements Contract {
     public function update(array $customPackage) {
 
         if (!$this->getIdentity()){
-            throw new TenancyException('Tenancy identity must be SET');
+            throw new TenancyException('Tenancy identity must be SET', 1000);
         }
+
+        return $this->tenant->update($customPackage);
+    }
+
+    public function updateAndReset(array $customPackage) {
+
+        if (!$current = $this->getIdentity()){
+            throw new TenancyException('Tenancy identity must be SET', 1000);
+        }
+
+        $this->update($customPackage)
+        ->unsetIdentity()
+        ->setIdentity($current);
 
     }
 

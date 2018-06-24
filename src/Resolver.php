@@ -27,7 +27,7 @@ class Resolver implements Contract {
     public function bootstrap(array $hooks = []) {
 
         if ($this->hooks) {
-            throw new ResolverException('Resolver already bootstrapped');
+            throw new ResolverException('Resolver already bootstrapped', 1001);
         }
 
         $this->hooks = [];
@@ -47,7 +47,7 @@ class Resolver implements Contract {
     public function get($entryName) {
 
         if (!$this->hooks) {
-            throw new ResolverException('Resolver needs to be bootstrapped');
+            throw new ResolverException('Resolver needs to be bootstrapped', 1000);
         }
 
         $entry = array_filter($this->hooks, function($v) use ($entryName){
@@ -68,7 +68,7 @@ class Resolver implements Contract {
     public function populate(array $package = [], array $params = []) : void {
 
         if (!$this->hooks) {
-            throw new ResolverException('Resolver needs to be bootstrapped');
+            throw new ResolverException('Resolver needs to be bootstrapped', 1000);
         }
 
         foreach ($this->hooks as &$hook) {
@@ -87,7 +87,7 @@ class Resolver implements Contract {
     public function purge() : void {
 
         if (!$this->hooks) {
-            throw new ResolverException('Resolver needs to be bootstrapped');
+            throw new ResolverException('Resolver needs to be bootstrapped', 1000);
         }
 
         foreach ($this->hooks as &$hook) {

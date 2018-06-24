@@ -60,6 +60,11 @@ Se fosse necessario fare un update di questi valori, bisognerà usare gli apposi
 
 Per eliminare una proprietà dal package, è necessario settare a il suo valore a ```null```.
 
+```php
+public function updateAndReset(array $customPackage)
+```
+Effettua l'update e resetta il Tenant, disconnettendolo e riconnettendolo.
+
 #### Helpers
 
 Ogni Tenant ha, legate a sé stesso, un certo numero di classi esterne che vengono istanziate usando i parametri dello stesso Tenant (es. connessione al database, chiave di cifratura personale, ecc...).
@@ -86,4 +91,19 @@ Dopo un deploy, qualora siano presenti nuove migrations, è necessario eseguire:
 ```bash
 php artisan cache:forget migration_status
 ```
+
+Se si effettuano modifiche al Pathfinder o al suo output, è necessario cancellarne la cache!!
+
+Le eccezioni che originano a seguito di un errore di connessione tra web services, restituiscono uno status compatibile con gli status HTTP, per facilitarne l'identificazione.
+
+Le altre eccezioni, dovrebbero quasi sempre restituire uno status >= 1000:
+
+- 1000: la dipendenza di riferimento o una delle dipendenze richieste deve essere istanziata per procedere
+- 1001: la dipendenza è già stata istanziata, quindi non può essere riistanziata
+- 1000 + http_equivalent: rappresenta un errore "simile" per contesto all'equivalente HTTP (ad es.: 1409 per indicare che si è verificato un conflitto.) - **Questi codici potrebbero variare!**
+
+
+
+
+
 

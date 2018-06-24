@@ -33,7 +33,7 @@ abstract class AbstractHook implements Contract {
             return $this->instance;
         }
 
-        throw new HookException(static::class . ' is not populated');
+        throw new HookException(static::class . ' is not populated', 1000);
     }
 
     final public function purge() : void {

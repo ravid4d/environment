@@ -63,7 +63,7 @@ class Tenant implements Contract {
 
     public function setIdentity($identity, $concreteParams = []) {
         if (!$this->db) {
-            throw new TenantException('Database resolver must be set');
+            throw new TenantException('Database resolver must be set', 1000);
         }
 
         $this->fire('tenant.setIdentity', ['identity' => $identity]);
@@ -129,7 +129,7 @@ class Tenant implements Contract {
             $this->fire('tenant.alignMigration.needed', ['identity' => $this->identity]);
 
             if ($this->store->read()['migrating']) {
-                throw new TenantException('Someone else is migrating here or previous migration failed...');
+                throw new TenantException('Someone else is migrating here or previous migration is freezed...', 1409);
             }
 
             $this->store->request('beginMigrate');
@@ -148,7 +148,7 @@ class Tenant implements Contract {
             $this->store->request('endMigrate', $postMigrationPayload);
 
             if ($quitReason ?? false) {
-                throw new TenantException('Migration failed. Tenant is now marked as *NOT* ACTIVE!', 500, $quitReason);
+                throw new TenantException('Migration failed. Tenant is now marked as *NOT* ACTIVE!', 1503, $quitReason);
             }
 
         }
@@ -164,7 +164,7 @@ class Tenant implements Contract {
 
     public function createIdentity(string $identity, $databaseServer = []) {
         if ($this->identity) {
-            throw new TenantException('Cannot create a Tenant while another Tenant is identified');
+            throw new TenantException('Cannot create a Tenant while another Tenant is identified', 1403);
         }
 
         $this->fire('tenant.createIdentity', ['identity' => $identity, 'databaseServer' => $databaseServer]);
