@@ -12,7 +12,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "AmcLab\\Tenancy\\Providers\\TenancyProvider"
+                "AmcLab\\Tenancy\\Providers\\TenancyServiceProvider"
             ],
             "aliases": {
                 "Tenancy": "AmcLab\\Tenancy\\Facades\\TenancyFacade"

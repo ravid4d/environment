@@ -171,7 +171,10 @@ class Tenant implements Contract {
 
         $this->store->setPathway('tenant', $identity);
         $hooks = $this->resolver->getHooks();
-        $persister = $this->persister->setServer($databaseServer);
+        $persister = $this->persister
+        ->setConnectionResolver($this->db)
+        ->setServerIdentity($databaseServer);
+
         $this->store->create($hooks, $persister);
 
         return $this;

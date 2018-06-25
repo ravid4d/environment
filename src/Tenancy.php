@@ -62,15 +62,14 @@ class Tenancy implements Contract {
 
     public function createIdentity(string $newIdentity, $databaseServer = []) {
 
+        // per i test locali ho usato: Tenancy::createIdentity('CODICE_TENANT','mariadb@local')
+
         if ($this->getIdentity()){
             throw new TenancyException('Tenancy identity is currently SET', 1001);
         }
 
-        $newTenant = $this->app->make(Tenant::class)
-        ->setConnectionResolver($this->app->make('db'));
-
-        $newTenant->getResolver()->bootstrap();
-
+        $newTenant = $this->app->make(Tenant::class);
+        $newTenant->setConnectionResolver($this->app->make('db'))->getResolver()->bootstrap();
         $newTenant->createIdentity($newIdentity, $databaseServer);
 
         unset($newTenant);

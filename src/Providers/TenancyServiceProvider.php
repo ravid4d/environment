@@ -10,7 +10,7 @@ use AmcLab\Tenancy\Contracts\Tenant;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
 
-class TenancyProvider extends ServiceProvider
+class TenancyServiceProvider extends ServiceProvider
 {
 
     public function boot(Tenancy $tenancy)
