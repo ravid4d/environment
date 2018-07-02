@@ -1,13 +1,13 @@
 <?php
 
-namespace AmcLab\Tenancy;
+namespace AmcLab\Environment;
 
 use AmcLab\Baseline\Contracts\PackageStore;
 use AmcLab\Baseline\Contracts\PersistenceManager;
 use AmcLab\Baseline\Traits\HasEventsDispatcherTrait;
-use AmcLab\Tenancy\Contracts\MigrationManager;
-use AmcLab\Tenancy\Contracts\Tenant as Contract;
-use AmcLab\Tenancy\Exceptions\TenantException;
+use AmcLab\Environment\Contracts\MigrationManager;
+use AmcLab\Environment\Contracts\Tenant as Contract;
+use AmcLab\Environment\Exceptions\TenantException;
 use Exception;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -32,7 +32,7 @@ class Tenant implements Contract {
     protected $identity;
 
     public function __construct(Repository $configRepository, MigrationManager $migrationManager, PackageStore $store, Resolver $resolver, PersistenceManager $persister, Dispatcher $events) {
-        $this->config = $configRepository->get('tenancy.tenant');
+        $this->config = $configRepository->get('environment.tenant');
         $this->migrationManager = $migrationManager;
         $this->store = $store;
         $this->resolver = $resolver;
@@ -40,12 +40,12 @@ class Tenant implements Contract {
         $this->setEventsDispatcher($events);
     }
 
-    public function setConnectionResolver(ConnectionResolverInterface $db) {
+    public function setDatabaseConnector(ConnectionResolverInterface $db) {
         $this->db = $db;
         return $this;
     }
 
-    public function getConnectionResolver() {
+    public function getDatabaseConnector() {
         return $this->db;
     }
 
@@ -81,7 +81,7 @@ class Tenant implements Contract {
         $this->resolver->populate($response['disclosed'], $concreteParams + [
             'database' => [
                 'connection' => 'tenant_' . str_random(8),
-                'resolver' => $this->db,
+                'connector' => $this->db,
             ]
         ]);
 
@@ -172,7 +172,7 @@ class Tenant implements Contract {
         $this->store->setPathway('tenant', $identity);
         $hooks = $this->resolver->getHooks();
         $persister = $this->persister
-        ->setConnectionResolver($this->db)
+        ->setDatabaseConnector($this->db)
         ->setServerIdentity($databaseServer);
 
         $this->store->create($hooks, $persister);

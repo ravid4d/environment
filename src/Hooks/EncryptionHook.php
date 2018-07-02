@@ -1,9 +1,9 @@
 <?php
 
-namespace AmcLab\Tenancy\Hooks;
+namespace AmcLab\Environment\Hooks;
 
-use AmcLab\Tenancy\Abstracts\AbstractHook;
-use AmcLab\Tenancy\Contracts\Hook as Contract;
+use AmcLab\Environment\Abstracts\AbstractHook;
+use AmcLab\Environment\Contracts\Hook as Contract;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Encryption\Encrypter;
 use Illuminate\Encryption\Encrypter as LaravelEncrypterImplementation;

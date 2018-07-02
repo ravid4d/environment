@@ -1,13 +1,13 @@
 <?php
 
-namespace AmcLab\Tenancy\Facades;
+namespace AmcLab\Environment\Facades;
 
 use Illuminate\Support\Facades\Facade;
 
-class TenancyFacade extends Facade {
+class EnvironmentFacade extends Facade {
 
     protected static function getFacadeAccessor() {
-        return 'tenancy';
+        return 'environment';
     }
 
 }

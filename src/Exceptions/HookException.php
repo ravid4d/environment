@@ -1,6 +1,6 @@
 <?php
 
-namespace AmcLab\Tenancy\Exceptions;
+namespace AmcLab\Environment\Exceptions;
 
 use RuntimeException;
 

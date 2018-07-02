@@ -1,9 +1,9 @@
 <?php
 
-namespace AmcLab\Tenancy\Abstracts;
+namespace AmcLab\Environment\Abstracts;
 
-use AmcLab\Tenancy\Contracts\Hook as Contract;
-use AmcLab\Tenancy\Exceptions\HookException;
+use AmcLab\Environment\Contracts\Hook as Contract;
+use AmcLab\Environment\Exceptions\HookException;
 
 abstract class AbstractHook implements Contract {
 

@@ -1,10 +1,10 @@
 <?php
 
-namespace AmcLab\Tenancy;
+namespace AmcLab\Environment;
 
-use AmcLab\Tenancy\Contracts\Hook;
-use AmcLab\Tenancy\Contracts\Resolver as Contract;
-use AmcLab\Tenancy\Exceptions\ResolverException;
+use AmcLab\Environment\Contracts\Hook;
+use AmcLab\Environment\Contracts\Resolver as Contract;
+use AmcLab\Environment\Exceptions\ResolverException;
 use AmcLab\Baseline\Traits\HasEventsDispatcherTrait;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -20,7 +20,7 @@ class Resolver implements Contract {
 
     public function __construct(Application $app, Repository $configRepository, Dispatcher $events) {
         $this->app = $app;
-        $this->config = $configRepository->get('tenancy.resolver');
+        $this->config = $configRepository->get('environment.resolver');
         $this->setEventsDispatcher($events);
     }
 

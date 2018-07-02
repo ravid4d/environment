@@ -6,9 +6,9 @@ return [
 
     'resolver' => [
         'hooks' => [
-            \AmcLab\Tenancy\Hooks\DatabaseHook::class,
-            \AmcLab\Tenancy\Hooks\EncryptionHook::class,
-            \AmcLab\Tenancy\Hooks\MaskingHook::class,
+            \AmcLab\Environment\Hooks\DatabaseHook::class,
+            \AmcLab\Environment\Hooks\EncryptionHook::class,
+            \AmcLab\Environment\Hooks\MaskingHook::class,
             //...altri?
         ],
     ],

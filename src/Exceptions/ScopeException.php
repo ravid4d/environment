@@ -4,6 +4,6 @@ namespace AmcLab\Environment\Exceptions;
 
 use RuntimeException;
 
-class ResolverException extends RuntimeException {
+class ScopeException extends RuntimeException {
 
 }

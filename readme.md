@@ -1,4 +1,4 @@
-# AmcLab\Tenancy
+# AmcLab\Environment
 
 Gestione multi-tenant per i nuovi progetti AMC basati su Laravel.
 
@@ -16,7 +16,7 @@ Gestione multi-tenant per i nuovi progetti AMC basati su Laravel.
 ## Documentazione
 
 
-### Tenancy facade
+### Environment facade
 
 Questa facade rappresenta un punto di accesso al Tenant di default.
 I metodi eseguono dei compiti specifici dell'istanza Tenant, ma limitati ad una singola istanza di quest'ultima, che non cambia mai.
@@ -79,7 +79,7 @@ Ogni Tenant ha, legate a sé stesso, un certo numero di classi esterne che vengo
 Ad esempio, sarà possibile eseguire il crypt di una stringa, usando l'encrypter del Tenant corrente, semplicemente scrivendo:
 
 ```php
-Tenancy::useEncryption()->encrypt('qualcosa')
+Environment::useEncryption()->encrypt('qualcosa')
 ```
 
 L'output sarà una stringa cifrata che sarà decifrabile _soltanto_ al Tenant corrente.

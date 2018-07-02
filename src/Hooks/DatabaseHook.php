@@ -1,11 +1,10 @@
 <?php
 
-namespace AmcLab\Tenancy\Hooks;
+namespace AmcLab\Environment\Hooks;
 
 use AmcLab\Disorder\Disorder;
-use AmcLab\Tenancy\Abstracts\AbstractHook;
-use AmcLab\Tenancy\Contracts\Hook as Contract;
-use Illuminate\Database\ConnectionResolverInterface;
+use AmcLab\Environment\Abstracts\AbstractHook;
+use AmcLab\Environment\Contracts\Hook as Contract;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 
 class DatabaseHook extends AbstractHook implements Contract {
@@ -13,7 +12,7 @@ class DatabaseHook extends AbstractHook implements Contract {
     //protected $connection;
     protected $configRepository;
     protected $concreteParams;
-    protected $connectionResolver;
+    protected $databaseConnector;
 
     public function __construct(ConfigRepository $configRepository) {
         $this->configRepository = $configRepository;
@@ -23,7 +22,7 @@ class DatabaseHook extends AbstractHook implements Contract {
     protected function concrete(array $config = [], array $concreteParams = []) {
 
         $this->concreteParams = $concreteParams['database'];
-        $this->connectionResolver = $concreteParams['database']['resolver'];
+        $this->databaseConnector = $concreteParams['database']['connector'];
 
         $connection = $this->concreteParams['connection'];
         $autoconnect = $this->concreteParams['autoconnect'] ?? false;
@@ -37,7 +36,7 @@ class DatabaseHook extends AbstractHook implements Contract {
 
         if ($autoconnect) {
             // chiudo quella che attualmente è la connessione di default
-            $this->connectionResolver->purge();
+            $this->databaseConnector->purge();
         }
 
         if ($makeDefault) {
@@ -50,16 +49,16 @@ class DatabaseHook extends AbstractHook implements Contract {
 
         // restituisco la connessione usata dall'hook
         if ($autoconnect) {
-            return $this->connectionResolver->reconnect($connection);
+            return $this->databaseConnector->reconnect($connection);
         }
         else {
-            return $this->connectionResolver->connection($connection);
+            return $this->databaseConnector->connection($connection);
         }
     }
 
     public function destroy() {
 
-        $this->connectionResolver->purge($this->concreteParams['connection']);
+        $this->databaseConnector->purge($this->concreteParams['connection']);
 
     }
 

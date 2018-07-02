@@ -1,10 +1,10 @@
 <?php
 
-namespace AmcLab\Tenancy\Hooks;
+namespace AmcLab\Environment\Hooks;
 
 use AmcLab\Disorder\Disorder;
-use AmcLab\Tenancy\Abstracts\AbstractHook;
-use AmcLab\Tenancy\Contracts\Hook as Contract;
+use AmcLab\Environment\Abstracts\AbstractHook;
+use AmcLab\Environment\Contracts\Hook as Contract;
 
 class MaskingHook extends AbstractHook implements Contract {
 

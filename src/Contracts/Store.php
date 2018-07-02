@@ -1,6 +1,6 @@
 <?php
 
-namespace AmcLab\Tenancy\Contracts;
+namespace AmcLab\Environment\Contracts;
 
 interface Store {
 

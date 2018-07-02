@@ -2,6 +2,6 @@
 
 namespace AmcLab\Environment\Contracts;
 
-interface Resolver {
+interface Scope {
 
 }

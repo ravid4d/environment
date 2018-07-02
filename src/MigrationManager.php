@@ -1,8 +1,8 @@
 <?php
 
-namespace AmcLab\Tenancy;
+namespace AmcLab\Environment;
 
-use AmcLab\Tenancy\Contracts\MigrationManager as Contract;
+use AmcLab\Environment\Contracts\MigrationManager as Contract;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Foundation\Application;
