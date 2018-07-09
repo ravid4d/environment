@@ -20,7 +20,7 @@ class EnvironmentServiceProvider extends ServiceProvider
             __DIR__.'../../config/environment.php' => config_path('environment.php'),
         ), 'config');
 
-        $environment->boot();
+        $environment->boot($this->app->make('db'));
 
     }
 

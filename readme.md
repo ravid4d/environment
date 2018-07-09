@@ -1,6 +1,6 @@
 # AmcLab\Environment
 
-Gestione multi-tenant per i nuovi progetti AMC basati su Laravel.
+Gestione ambiente multi-tenant per i nuovi progetti AMC basati su Laravel versione >= 5.6.
 
 ...Work in progress...
 
@@ -8,6 +8,8 @@ Gestione multi-tenant per i nuovi progetti AMC basati su Laravel.
 
 - aggiungere altri eventi ed implementare classi eventi
 - valutare generatore di database basato su classe messenger (sostituire dominio "tenant" con "server")
+- documentare Scope
+- documentare metodi getSpecs() e setWithSpecs()
 
 ## Requisiti
 
@@ -18,8 +20,8 @@ Gestione multi-tenant per i nuovi progetti AMC basati su Laravel.
 
 ### Environment facade
 
-Questa facade rappresenta un punto di accesso al Tenant di default.
-I metodi eseguono dei compiti specifici dell'istanza Tenant, ma limitati ad una singola istanza di quest'ultima, che non cambia mai.
+Questa facade rappresenta un punto di accesso all'ambiente corrente.
+I metodi eseguono dei compiti specifici dell'istanza Environment, ma limitati ad una singola istanza di quest'ultima, che non cambia mai.
 
 ```php
 public function getTenant() : Tenant
@@ -51,7 +53,7 @@ Crea un nuovo database e lo collega ad una nuova identità, dopodiché setta que
 public function update(array $customPackage)
 ```
 Aggiorna il package del cliente corrente.
-Non esistono vincoli, controlli o restrizioni su cosa possa essere aggiornato o aggiunto, ma le seguenti chiavi non possono essere modificate:
+Non esistono vincoli, controlli o restrizioni su cosa possa essere aggiornato o aggiunto, ma le seguenti chiavi, una volta settate, *non possono essere modificate* da questo metodo:
 
 - database
 - encryption
@@ -64,7 +66,7 @@ Per eliminare una proprietà dal package, è necessario settare a il suo valore 
 ```php
 public function updateAndReset(array $customPackage)
 ```
-Effettua l'update e resetta il Tenant, disconnettendolo e riconnettendolo.
+Effettua l'update come sopra e resetta l'identità al termine.
 
 #### Helpers
 

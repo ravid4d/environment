@@ -11,13 +11,14 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\ConnectionResolverInterface;
 
-class Environment implements Contract, \Serializable {
+class Environment implements Contract {
 
     protected $tenant;
     protected $app;
     protected $config;
     protected $databaseConnector;
     protected $scope;
+    protected $booted;
 
     public function __construct(Repository $configRepository, Tenant $tenant, Application $app, Scope $scope) {
         $this->config = $configRepository->get('environment.singleton');
@@ -26,27 +27,34 @@ class Environment implements Contract, \Serializable {
         $this->scope = $scope;
     }
 
-    public function serialize() {
-        return serialize([
-            'identity'=>$this->getIdentity(),
-            'scope'=>$this->getScope(),
-        ]);
-    }
+    public function boot(ConnectionResolverInterface $databaseConnector) {
+        if ($this->booted) {
+            throw new EnvironmentException('Environment already booted', 1500);
+        }
 
-    public function unserialize($serialized) {
-        $params = unserialize($serialized);
-        $this->app = app();
-        $this->config = app('config')->get('environment.singleton');
-        $this->tenant = app(Tenant::class);
-        $this->boot()->setIdentity($params['identity']);
-        $this->scope = $params['scope'];
-    }
-
-    public function boot() {
-        $this->databaseConnector = $this->app->make('db');
-        $this->tenant->setDatabaseConnector($this->databaseConnector)
+        $this->databaseConnector = $databaseConnector;
+        $this->tenant->setDatabaseConnector($databaseConnector)
         ->getResolver()
         ->bootstrap();
+
+        $this->booted = true;
+
+        return $this;
+    }
+
+    public function getSpecs() {
+        return [
+            'identity'=>$this->getIdentity(),
+            'scope'=>$this->getScope(),
+        ];
+    }
+
+    public function setWithSpecs($specs = null) {
+        if ($specs) {
+            foreach($specs as $specKey => $specValue) {
+                $this->{'set'.studly_case($specKey)}($specValue);
+            }
+        }
         return $this;
     }
 
@@ -54,12 +62,15 @@ class Environment implements Contract, \Serializable {
         return $this->scope;
     }
 
-    public function setScope() {
+    public function setScope($scope) {
         $this->scope = $scope;
         return $this;
     }
 
     public function getTenant() : Tenant {
+        if (!$this->booted) {
+            throw new EnvironmentException('Environment already booted', 1500);
+        }
         return $this->tenant;
     }
 
@@ -71,11 +82,15 @@ class Environment implements Contract, \Serializable {
      */
     public function setIdentity(string $identity) {
 
-        if ($this->getIdentity()){
-            throw new EnvironmentException('Environment identity is currently SET', 1001);
+        if (!$this->booted) {
+            throw new EnvironmentException('Environment already booted', 1500);
         }
 
-        return $this->tenant->setIdentity($identity, [
+        if ($currentIdentity = $this->getIdentity()){
+            throw new EnvironmentException('Environment identity is currently SET: ' . $currentIdentity, 1001);
+        }
+
+        $this->tenant->setIdentity($identity, [
             'database' => [
                 'connection' => $connectionName = 'currentTenant',
                 'autoconnect' => true,
@@ -86,24 +101,36 @@ class Environment implements Contract, \Serializable {
         ->alignMigrations()
         ->alignSeeds();
 
+        return $this;
+
     }
 
     public function unsetIdentity() {
+        if (!$this->booted) {
+            throw new EnvironmentException('Environment already booted', 1500);
+        }
+
         if ($this->getIdentity()){
             $this->tenant->unsetIdentity();
         }
+
+        return $this;
     }
 
     public function getIdentity() :? string {
-        return $this->tenant->getIdentity();
+        if (!$this->booted) {
+            throw new EnvironmentException('Environment already booted', 1500);
+        }
+
+        return $this->tenant ? $this->tenant->getIdentity() : null;
     }
 
     public function createIdentity(string $newIdentity, string $databaseServer) {
 
         // per i test locali ho usato: Environment::createIdentity('CODICE_TENANT','mariadb@local')
 
-        if ($this->getIdentity()){
-            throw new EnvironmentException('Environment identity is currently SET', 1001);
+        if ($currentIdentity = $this->getIdentity()){
+            throw new EnvironmentException('Environment identity is currently SET: ' . $currentIdentity, 1001);
         }
 
         $newTenant = $this->app->make(Tenant::class);
@@ -130,7 +157,9 @@ class Environment implements Contract, \Serializable {
             throw new EnvironmentException('Environment identity must be SET', 1000);
         }
 
-        return $this->tenant->update($customPackage);
+        $this->tenant->update($customPackage);
+
+        return $this;
     }
 
     public function updateAndReset(array $customPackage) {
@@ -145,8 +174,8 @@ class Environment implements Contract, \Serializable {
 
     }
 
-    public function pathway() {
-        return $this->getTenant()->getStore()->getPathway();
+    public function pathway($direction) {
+        return $this->getTenant()->getStore()->getPathway()[$direction] ?? null;
     }
 
     public function __call($name, $args){
