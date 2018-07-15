@@ -1,27 +1,29 @@
 {
-    "name": "amclab/environment",
-    "description": "Multi-tenant management",
-    "authors": [
-        {
-            "name": "Federico Torrisi",
-            "email": "federico@amcweb.it"
-        }
-    ],
-    "minimum-stability": "dev",
-    "require": {},
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AmcLab\\Environment\\Providers\\EnvironmentServiceProvider"
-            ],
-            "aliases": {
-                "Environment": "AmcLab\\Environment\\Facades\\EnvironmentFacade"
-            }
-        }
-    },
-    "autoload": {
-        "psr-4": {
-            "AmcLab\\Environment\\": "src/"
-        }
+  "name": "amclab/environment",
+  "description": "Multi-tenant management",
+  "authors": [{
+    "name": "Federico Torrisi",
+    "email": "federico@amcweb.it"
+  }],
+  "minimum-stability": "dev",
+  "require": {
+    "php": "^7.2",
+    "laravel/framework": "^5.6",
+    "amclab/baseline": "dev-master"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AmcLab\\Environment\\Providers\\EnvironmentServiceProvider"
+      ],
+      "aliases": {
+        "Environment": "AmcLab\\Environment\\Facades\\EnvironmentFacade"
+      }
     }
+  },
+  "autoload": {
+    "psr-4": {
+      "AmcLab\\Environment\\": "src/"
+    }
+  }
 }
