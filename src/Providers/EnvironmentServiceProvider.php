@@ -17,7 +17,7 @@ class EnvironmentServiceProvider extends ServiceProvider
     public function boot(Environment $environment)
     {
         $this->publishes(array(
-            __DIR__.'../../config/environment.php' => config_path('environment.php'),
+            __DIR__.'/../../config/environment.php' => config_path('environment.php'),
         ), 'config');
 
         $environment->boot($this->app->make('db'));
