@@ -15,6 +15,12 @@ Gestione ambiente multi-tenant per i nuovi progetti AMC basati su Laravel versio
 
 ## Installazione
 
+Dopo l'installazione è necessario effettuare la pubblicazione del file di configurazione:
+
+```bash
+php artisan vendor:publish
+```
+
 ## Documentazione
 
 
