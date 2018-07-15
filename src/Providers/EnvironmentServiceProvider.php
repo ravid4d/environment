@@ -13,15 +13,13 @@ use Illuminate\Support\ServiceProvider;
 
 class EnvironmentServiceProvider extends ServiceProvider
 {
+    protected $defer = true;
 
-    public function boot(Environment $environment)
+    public function boot()
     {
         $this->publishes(array(
             __DIR__.'/../../config/environment.php' => config_path('environment.php'),
         ), 'config');
-
-        $environment->boot($this->app->make('db'));
-
     }
 
     public function register()
@@ -35,9 +33,17 @@ class EnvironmentServiceProvider extends ServiceProvider
         $this->app->bind(Tenant::class, \AmcLab\Environment\Tenant::class);
         $this->app->bind(Scope::class, \AmcLab\Environment\Scopes\DefaultScope::class);
 
-        $this->app->singleton(Environment::class, \AmcLab\Environment\Environment::class);
+        $this->app->singleton(Environment::class, function($app) {
+            return $app->make(\AmcLab\Environment\Environment::class)
+            ->boot($this->app->make('db'));
+        });
+
         $this->app->alias(Environment::class, 'environment');
 
+    }
+
+    public function provides() {
+        return [Environment::class];
     }
 
 }
