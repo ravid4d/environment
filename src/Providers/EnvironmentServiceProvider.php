@@ -13,7 +13,7 @@ use Illuminate\Support\ServiceProvider;
 
 class EnvironmentServiceProvider extends ServiceProvider
 {
-    protected $defer = true;
+    // protected $defer = true;
 
     public function boot()
     {
@@ -40,10 +40,11 @@ class EnvironmentServiceProvider extends ServiceProvider
 
         $this->app->alias(Environment::class, 'environment');
 
+
     }
 
-    public function provides() {
-        return [Environment::class];
-    }
+    // public function provides() {
+    //     return [Environment::class];
+    // }
 
 }
