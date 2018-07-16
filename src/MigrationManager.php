@@ -61,7 +61,7 @@ class MigrationManager implements Contract {
         $this->kernel->call('migrate', [
             '--force' => true,
             '--database' => $databaseConnectionName,
-            '--path' => $this->configRepository->get('environment.tenantMigrationsPath'),
+            '--path' => $this->configRepository->get('environment.migrations-path'),
         ]);
 
         return $this->getLocalStatus($this->connection);
