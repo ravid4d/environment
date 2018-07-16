@@ -14,11 +14,13 @@ return [
     ],
 
     'api' => [
-        'database-manager' => [
+        'database-manager' => [ // TODO: da implementare...
             'uri' => '/api/amcManager',
             'key' => '123',
             'secret' => 'qwerty',
         ]
-    ]
+    ],
+
+    'migrations-path' => 'database/migrations/tenants',
 
 ];
