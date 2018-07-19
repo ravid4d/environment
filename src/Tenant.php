@@ -116,10 +116,12 @@ class Tenant implements Contract {
 
     public function suspend() {
         $this->store->request('suspend');
+        return $this;
     }
 
     public function wakeup() {
         $this->store->request('wakeup');
+        return $this;
     }
 
     public function alignMigrations() {

@@ -104,8 +104,10 @@ class Environment implements Contract {
             // effettua la migration automaticamente solo se l'environment è attivo
             if ($this->isActive()) {
                 $this->tenant
+                ->suspend()
                 ->alignMigrations()
-                ->alignSeeds();
+                ->alignSeeds()
+                ->wakeup();
             }
             else {
                 throw new EnvironmentException('Environment is currently not active', 503);
@@ -164,10 +166,12 @@ class Environment implements Contract {
 
     public function suspend() {
         $this->tenant->suspend();
+        return $this;
     }
 
     public function wakeup() {
         $this->tenant->wakeup();
+        return $this;
     }
 
     public function createIdentity(string $newIdentity, string $databaseServer) {
