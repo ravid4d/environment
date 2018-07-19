@@ -101,10 +101,6 @@ class Tenant implements Contract {
     }
 
     public function isActive() {
-        if (!$this->identity) {
-            throw new TenantException('No Tenant has been identified yet...', 1403);
-        }
-
         return $this->store->isActive();
     }
 
@@ -116,6 +112,14 @@ class Tenant implements Contract {
 
         return $this;
 
+    }
+
+    public function suspend() {
+        $this->store->request('suspend');
+    }
+
+    public function wakeup() {
+        $this->store->request('wakeup');
     }
 
     public function alignMigrations() {
