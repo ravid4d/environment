@@ -70,9 +70,11 @@ class MigrationManager implements Contract {
     protected function getStatusFromFilesystem($app) {
 
         return $this->cache->rememberForever('migration_status', function() use ($app) {
-            $path = $app->databasePath() . DIRECTORY_SEPARATOR . 'migrations';
+            $path = $app->databasePath() . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . 'tenants';
             $files = $app->make('migrator')->getMigrationFiles($path);
-            return md5(array_last(array_keys($files)));
+            return md5(array_last(array_keys($files), true));
+            // NOTE: uso array_last perché getLocalStatus prende solo la più recente migration
+            // (evito così di dover tirare un elenco lunghissimo ad ogni caricamento)
         });
     }
 
