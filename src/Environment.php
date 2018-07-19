@@ -69,7 +69,7 @@ class Environment implements Contract {
 
     public function getTenant() : Tenant {
         if (!$this->booted) {
-            throw new EnvironmentException('Environment already booted', 1500);
+            throw new EnvironmentException('Environment not booted', 1500);
         }
         return $this->tenant;
     }
@@ -83,7 +83,7 @@ class Environment implements Contract {
     public function setIdentity(string $identity) {
 
         if (!$this->booted) {
-            throw new EnvironmentException('Environment already booted', 1500);
+            throw new EnvironmentException('Environment not booted', 1500);
         }
 
         if ($currentIdentity = $this->getIdentity()){
@@ -107,7 +107,7 @@ class Environment implements Contract {
 
     public function unsetIdentity() {
         if (!$this->booted) {
-            throw new EnvironmentException('Environment already booted', 1500);
+            throw new EnvironmentException('Environment not booted', 1500);
         }
 
         if ($this->getIdentity()){
@@ -119,10 +119,18 @@ class Environment implements Contract {
 
     public function getIdentity() :? string {
         if (!$this->booted) {
-            throw new EnvironmentException('Environment already booted', 1500);
+            throw new EnvironmentException('Environment not booted', 1500);
         }
 
         return $this->tenant ? $this->tenant->getIdentity() : null;
+    }
+
+    public function isActive() {
+        if (!$this->booted) {
+            throw new EnvironmentException('Environment not booted', 1500);
+        }
+
+        return $this->tenant->isActive();
     }
 
     public function createIdentity(string $newIdentity, string $databaseServer) {

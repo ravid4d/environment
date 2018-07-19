@@ -100,6 +100,14 @@ class Tenant implements Contract {
         return $this;
     }
 
+    public function isActive() {
+        if (!$this->identity) {
+            throw new TenantException('No Tenant has been identified yet...', 1403);
+        }
+
+        return $this->store->isActive();
+    }
+
     public function update(array $customPackage = []) {
 
         $this->fire('tenant.update', ['identity' => $this->identity]);
