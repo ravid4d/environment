@@ -90,44 +90,23 @@ class Environment implements Contract {
             throw new EnvironmentException('Environment identity is currently SET: ' . $currentIdentity, 1001);
         }
 
-        try {
+        $this->tenant->setIdentity($identity, [
+            'database' => [
+                'connection' => $connectionName = 'currentTenant',
+                'autoconnect' => true,
+                'makeDefault' => true,
+                'connector' => $this->databaseConnector,
+            ]
+        ]);
 
-            $this->tenant->setIdentity($identity, [
-                'database' => [
-                    'connection' => $connectionName = 'currentTenant',
-                    'autoconnect' => true,
-                    'makeDefault' => true,
-                    'connector' => $this->databaseConnector,
-                ]
-            ]);
-
-            // effettua la migration automaticamente solo se l'environment è attivo
-            if ($this->isActive()) {
-                $this->tenant
-                ->alignMigrations()
-                ->alignSeeds();
-            }
-            else {
-                throw new EnvironmentException('Environment is currently not active', 503);
-            }
-
+        // effettua la migration automaticamente solo se l'environment è attivo
+        if ($this->isActive()) {
+            $this->tenant
+            ->alignMigrations()
+            ->alignSeeds();
         }
-
-        // intercetto le eccezioni per gestire, se necessario, il log
-        catch (EnvironmentException $e) {
-
-            // es.: errori di concorrenza (molto rari, se non da cli)
-            if ($e->getCode() >= 1400) {
-                Log::error($e);
-            }
-
-            // es.: migration non riuscita ed environment bloccato
-            else if ($e->getCode() >= 1500) {
-                Log::critical($e);
-            }
-
-            throw $e;
-
+        else {
+            throw new EnvironmentException('Environment is currently not active', 503);
         }
 
         return $this;

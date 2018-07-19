@@ -13,6 +13,7 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\QueryException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Questa classe implementa le singole operazioni dei tenant.
@@ -27,17 +28,19 @@ class Tenant implements Contract {
     protected $store;
     protected $resolver;
     protected $persister;
+    protected $logger;
     protected $db;
 
     protected $identity;
 
-    public function __construct(Repository $configRepository, MigrationManager $migrationManager, PackageStore $store, Resolver $resolver, PersistenceManager $persister, Dispatcher $events) {
+    public function __construct(Repository $configRepository, MigrationManager $migrationManager, PackageStore $store, Resolver $resolver, PersistenceManager $persister, Dispatcher $events, LoggerInterface $logger) {
         $this->config = $configRepository->get('environment.tenant');
         $this->migrationManager = $migrationManager;
         $this->store = $store;
         $this->resolver = $resolver;
         $this->persister = $persister;
         $this->setEventsDispatcher($events);
+        $this->logger = $logger;
     }
 
     public function setDatabaseConnector(ConnectionResolverInterface $db) {
@@ -143,6 +146,7 @@ class Tenant implements Contract {
             $this->fire('tenant.alignMigration.needed', ['identity' => $this->identity]);
 
             if ($this->store->read()['migrating']) {
+                $this->logger->error($e);
                 throw new TenantException('Someone else is migrating here or previous migration is freezed...', 1409);
             }
 
@@ -154,6 +158,9 @@ class Tenant implements Contract {
             try {
                 $newStatus = $this->migrationManager->attempt();
                 $postMigrationPayload = ['migration' => $newStatus];
+                if ($wasActive) {
+                    $this->wakeup();
+                }
             }
 
             catch (Exception $e) {
@@ -164,11 +171,8 @@ class Tenant implements Contract {
 
             $this->store->request('endMigrate', $postMigrationPayload);
 
-            if ($wasActive) {
-                $this->wakeup();
-            }
-
             if ($quitReason ?? false) {
+                $this->logger->critical($quitReason);
                 throw new TenantException('Migration failed. Tenant is now marked as *NOT* ACTIVE!', 1503, $quitReason);
             }
 
