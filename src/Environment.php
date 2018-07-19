@@ -104,10 +104,8 @@ class Environment implements Contract {
             // effettua la migration automaticamente solo se l'environment è attivo
             if ($this->isActive()) {
                 $this->tenant
-                ->suspend()
                 ->alignMigrations()
-                ->alignSeeds()
-                ->wakeup();
+                ->alignSeeds();
             }
             else {
                 throw new EnvironmentException('Environment is currently not active', 503);

@@ -146,6 +146,9 @@ class Tenant implements Contract {
                 throw new TenantException('Someone else is migrating here or previous migration is freezed...', 1409);
             }
 
+            $wasActive = $this->isActive();
+
+            $this->suspend();
             $this->store->request('beginMigrate');
 
             try {
@@ -160,6 +163,10 @@ class Tenant implements Contract {
             }
 
             $this->store->request('endMigrate', $postMigrationPayload);
+
+            if ($wasActive) {
+                $this->wakeup();
+            }
 
             if ($quitReason ?? false) {
                 throw new TenantException('Migration failed. Tenant is now marked as *NOT* ACTIVE!', 1503, $quitReason);
