@@ -24,6 +24,7 @@ class Tenant implements Contract {
 
     protected $config;
 
+    protected $configRepository;
     protected $migrationManager;
     protected $store;
     protected $resolver;
@@ -34,6 +35,7 @@ class Tenant implements Contract {
     protected $identity;
 
     public function __construct(Repository $configRepository, MigrationManager $migrationManager, PackageStore $store, Resolver $resolver, PersistenceManager $persister, Dispatcher $events, LoggerInterface $logger) {
+        $this->configRepository = $configRepository;
         $this->config = $configRepository->get('environment.tenant');
         $this->migrationManager = $migrationManager;
         $this->store = $store;
@@ -107,6 +109,36 @@ class Tenant implements Contract {
         return $this->store->isActive();
     }
 
+    public function exists($identity) {
+        if (!$this->db) {
+            throw new TenantException('Database resolver must be set', 1000);
+        }
+
+        $this->fire('tenant.exists', ['identity' => $identity]);
+
+        $temporary = (new $this($this->configRepository, $this->migrationManager, clone $this->store, $this->resolver, $this->persister, $this->events, $this->logger))
+        ->setDatabaseConnector($this->db)
+        ->getStore()
+        ->setPathway('tenant', $identity);
+
+        try {
+            // lo cerco senza bypassare la cache... eventualmente l'errore 404 viene intercettato dopo
+            return $temporary->exists(false);
+        }
+
+        catch (Exception $e) {
+            if ($e->getCode() === 404) {
+                return false;
+            }
+            throw $e;
+        }
+
+        finally {
+            unset($temporary);
+        }
+
+    }
+    /////////////////////////////////////////////
     public function update(array $customPackage = []) {
 
         $this->fire('tenant.update', ['identity' => $this->identity]);

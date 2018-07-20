@@ -74,6 +74,10 @@ class Environment implements Contract {
         return $this->tenant;
     }
 
+    public function exists($identity) {
+        return $this->tenant->exists($identity);
+    }
+
     /**
      * Procedura per il setup del tenant per la sessione corrente
      *
