@@ -91,7 +91,7 @@ class Environment implements Contract {
             throw new EnvironmentException('Environment is currently not active', 503);
         }
 
-        return $this;
+        return $this->afterTenantChange();
 
     }
 
@@ -113,7 +113,7 @@ class Environment implements Contract {
             ]
         ]);
 
-        return $this->afterTenantChange();
+        return $this;
     }
 
     protected function afterTenantChange() {
