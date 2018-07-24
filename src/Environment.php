@@ -113,7 +113,7 @@ class Environment implements Contract {
             ]
         ]);
 
-        return $this;
+        return $this->afterTenantChange();
     }
 
     protected function afterTenantChange() {
