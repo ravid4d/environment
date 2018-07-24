@@ -6,9 +6,11 @@ return [
 
     'resolver' => [
         'hooks' => [
-            \AmcLab\Environment\Hooks\DatabaseHook::class,
-            \AmcLab\Environment\Hooks\EncryptionHook::class,
-            \AmcLab\Environment\Hooks\MaskingHook::class,
+            \AmcLab\Environment\Hooks\DatabaseHook::class => [
+                'connectionName' => 'currentTenant'
+            ],
+            \AmcLab\Environment\Hooks\EncryptionHook::class => [],
+            \AmcLab\Environment\Hooks\MaskingHook::class => [],
             //...altri?
         ],
     ],

@@ -29,10 +29,11 @@ class DatabaseHook extends AbstractHook implements Contract {
         $makeDefault = $this->concreteParams['makeDefault'] ?? false;
 
         // prendo la configurazione dei database di Laravel
-        $base = $this->configRepository->get('database');
+        $connectionsConfig = $this->configRepository->get('database.connections');
+        $currentHookConfig = $this->configRepository->get('environment.resolver.hooks.' . get_class($this));
 
         // scrivo i dati di connessione ricevuti sopra il template del driver corrente
-        $newConfig = $config['package'] + $base['connections'][$config['package']['driver']];
+        $newConfig = $config['package'] + $connectionsConfig[$currentHookConfig['connectionName']];
 
         if ($autoconnect) {
             // chiudo quella che attualmente è la connessione di default

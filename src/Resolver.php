@@ -31,7 +31,7 @@ class Resolver implements Contract {
         }
 
         $this->hooks = [];
-        $list = $hooks ?: $this->config['hooks'];
+        $list = $hooks ?: array_keys($this->config['hooks']);
 
         foreach ($list as $hook) {
             $this->hooks[] = $this->app->make($hook);
