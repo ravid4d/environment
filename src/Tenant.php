@@ -109,6 +109,10 @@ class Tenant implements Contract {
         return $this->store->isActive();
     }
 
+    public function hasEverBeenMigrated() {
+        return $this->store->hasEverBeenMigrated();
+    }
+
     public function exists($identity) {
         if (!$this->db) {
             throw new TenantException('Database resolver must be set', 1000);

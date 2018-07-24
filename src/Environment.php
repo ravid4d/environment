@@ -81,11 +81,21 @@ class Environment implements Contract {
     /**
      * Procedura per il setup del tenant per la sessione corrente
      *
-     * @param string $identity
+     * @param string $identity Stringa contenente l'identity da popolare
      * @return void
      */
     public function setIdentity(string $identity) {
 
+        // effettua la migration automaticamente solo se l'environment è attivo
+        if (!$this->setTenantIdentity($identity)->isActive()) {
+            throw new EnvironmentException('Environment is currently not active', 503);
+        }
+
+        return $this;
+
+    }
+
+    protected function setTenantIdentity(string $identity) {
         if (!$this->booted) {
             throw new EnvironmentException('Environment not booted', 1500);
         }
@@ -103,18 +113,15 @@ class Environment implements Contract {
             ]
         ]);
 
-        // effettua la migration automaticamente solo se l'environment è attivo
-        if ($this->isActive()) {
-            $this->tenant
-            ->alignMigrations()
-            ->alignSeeds();
-        }
-        else {
-            throw new EnvironmentException('Environment is currently not active', 503);
-        }
+        return $this;
+    }
+
+    protected function afterTenantChange() {
+        $this->tenant
+        ->alignMigrations()
+        ->alignSeeds();
 
         return $this;
-
     }
 
     public function unsetIdentity() {
@@ -145,6 +152,14 @@ class Environment implements Contract {
         return $this->tenant->isActive();
     }
 
+    public function hasEverBeenMigrated() {
+        if (!$this->booted) {
+            throw new EnvironmentException('Environment not booted', 1500);
+        }
+
+        return $this->tenant->hasEverBeenMigrated();
+    }
+
     public function suspend() {
         $this->tenant->suspend();
         return $this;
@@ -169,10 +184,9 @@ class Environment implements Contract {
         ->bootstrap();
 
         $newTenant->createIdentity($newIdentity, $databaseServer);
-
         unset($newTenant);
 
-        return $tenant = $this->setIdentity($newIdentity);
+        return $this->setTenantIdentity($newIdentity)->afterTenantChange();
 
         // TODO: factories tabelle utenti, ruoli, ecc...
         // $tenant->createBaseTables()
