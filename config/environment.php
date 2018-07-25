@@ -25,7 +25,7 @@ return [
 
     'migrations' => [
         'path' => 'database/migrations/tenants',
-        'status-cache-store' => 'environment',
+        'status-cache-store' => env('ENVIRONMENT_CACHE_STORE', 'default'),
     ],
 
 ];
