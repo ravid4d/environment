@@ -126,7 +126,7 @@ class Tenant implements Contract {
         ->setPathway('tenant', $identity);
 
         try {
-            // lo cerco senza bypassare la cache... eventualmente l'errore 404 viene intercettato dopo
+            // non serve bypassare la cache, quindi posso evitare una richiesta http, qui...
             return $temporary->exists(false);
         }
 

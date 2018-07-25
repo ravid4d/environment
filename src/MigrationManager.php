@@ -3,7 +3,7 @@
 namespace AmcLab\Environment;
 
 use AmcLab\Environment\Contracts\MigrationManager as Contract;
-use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Contracts\Cache\Factory;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Foundation\Application;
@@ -18,9 +18,9 @@ class MigrationManager implements Contract {
     protected $configRepository;
     protected $connection;
 
-    public function __construct(Application $app, CacheRepository $cache, Kernel $kernel, Repository $configRepository) {
+    public function __construct(Application $app, Factory $cache, Kernel $kernel, Repository $configRepository) {
         $this->app = $app;
-        $this->cache = $cache;
+        $this->cache = $cache->store($app->config->get('environment.migrations.status-cache-store'));
         $this->kernel = $kernel;
         $this->configRepository = $configRepository;
     }
@@ -61,7 +61,7 @@ class MigrationManager implements Contract {
         $this->kernel->call('migrate', [
             '--force' => true,
             '--database' => $databaseConnectionName,
-            '--path' => $this->configRepository->get('environment.migrations-path'),
+            '--path' => $this->configRepository->get('environment.migrations.path'),
         ]);
 
         return $this->getLocalStatus($this->connection);

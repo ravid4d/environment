@@ -23,6 +23,9 @@ return [
         ]
     ],
 
-    'migrations-path' => 'database/migrations/tenants',
+    'migrations' => [
+        'path' => 'database/migrations/tenants',
+        'status-cache-store' => 'environment',
+    ],
 
 ];
