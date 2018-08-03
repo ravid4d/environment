@@ -182,8 +182,7 @@ class Tenant implements Contract {
             $this->fire('tenant.alignMigration.needed', ['identity' => $this->identity]);
 
             if ($this->store->read()['migrating']) {
-                $this->logger->error($e);
-                throw new TenantException('Someone else is migrating here or previous migration is freezed...', 1409);
+                throw new TenantException('Someone else is migrating here or previous migration is freezed...', 1503);
             }
 
             $wasActive = $this->isActive();
