@@ -71,7 +71,7 @@ class Tenant implements Contract {
             throw new TenantException('Database resolver must be set', 1000);
         }
 
-        $this->fire('tenant.setIdentity', ['identity' => $identity]);
+        $this->dispatch('tenant.setIdentity', ['identity' => $identity]);
 
         $this->store->setPathway('tenant', $identity);
 
@@ -96,7 +96,7 @@ class Tenant implements Contract {
     }
 
     public function unsetIdentity() {
-        $this->fire('tenant.unsetIdentity', ['identity' => $this->identity]);
+        $this->dispatch('tenant.unsetIdentity', ['identity' => $this->identity]);
 
         $this->resolver->purge();
         $this->store->unsetPathway();
@@ -118,7 +118,7 @@ class Tenant implements Contract {
             throw new TenantException('Database resolver must be set', 1000);
         }
 
-        $this->fire('tenant.exists', ['identity' => $identity]);
+        $this->dispatch('tenant.exists', ['identity' => $identity]);
 
         $temporary = (new $this($this->configRepository, $this->migrationManager, clone $this->store, $this->resolver, $this->persister, $this->events, $this->logger))
         ->setDatabaseConnector($this->db)
@@ -145,7 +145,7 @@ class Tenant implements Contract {
     /////////////////////////////////////////////
     public function update(array $customPackage = []) {
 
-        $this->fire('tenant.update', ['identity' => $this->identity]);
+        $this->dispatch('tenant.update', ['identity' => $this->identity]);
 
         $this->store->update($customPackage);
 
@@ -179,7 +179,7 @@ class Tenant implements Contract {
 
         if ($localMigrationStatus !== $appMigrationStatus) {
 
-            $this->fire('tenant.alignMigration.needed', ['identity' => $this->identity]);
+            $this->dispatch('tenant.alignMigration.needed', ['identity' => $this->identity]);
 
             if ($this->store->read()['migrating']) {
                 throw new TenantException('Someone else is migrating here or previous migration is freezed...', 1503);
@@ -199,7 +199,7 @@ class Tenant implements Contract {
             }
 
             catch (Exception $e) {
-                $this->fire('tenant.alignMigration.failed', ['identity' => $this->identity, 'exception' => $e]);
+                $this->dispatch('tenant.alignMigration.failed', ['identity' => $this->identity, 'exception' => $e]);
                 $postMigrationPayload = ['failed'=> true];
                 $quitReason = $e;
             }
@@ -227,7 +227,7 @@ class Tenant implements Contract {
             throw new TenantException('Cannot create a Tenant while another Tenant is identified', 1403);
         }
 
-        $this->fire('tenant.createIdentity', ['identity' => $identity, 'databaseServer' => $databaseServer]);
+        $this->dispatch('tenant.createIdentity', ['identity' => $identity, 'databaseServer' => $databaseServer]);
 
         $this->store->setPathway('tenant', $identity);
         $hooks = $this->resolver->getHooks();
