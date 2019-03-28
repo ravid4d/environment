@@ -2,13 +2,14 @@
 
 namespace AmcLab\Environment;
 
+use AmcLab\Baseline\Traits\HasEventsDispatcherTrait;
 use AmcLab\Environment\Contracts\Hook;
 use AmcLab\Environment\Contracts\Resolver as Contract;
 use AmcLab\Environment\Exceptions\ResolverException;
-use AmcLab\Baseline\Traits\HasEventsDispatcherTrait;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Str;
 
 class Resolver implements Contract {
 
@@ -74,7 +75,7 @@ class Resolver implements Contract {
         foreach ($this->hooks as &$hook) {
 
             $hook->purge();
-            $entry = camel_case(substr(class_basename(get_class($hook)), 0, -4));
+            $entry = Str::camel(substr(class_basename(get_class($hook)), 0, -4));
 
             if ($packageEntry = $package[$entry] ?? null){
                 $hook->populate($packageEntry, $params);

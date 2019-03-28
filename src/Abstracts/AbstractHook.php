@@ -4,6 +4,7 @@ namespace AmcLab\Environment\Abstracts;
 
 use AmcLab\Environment\Contracts\Hook as Contract;
 use AmcLab\Environment\Exceptions\HookException;
+use Illuminate\Support\Str;
 
 abstract class AbstractHook implements Contract {
 
@@ -11,7 +12,7 @@ abstract class AbstractHook implements Contract {
     protected $entry;
 
     public function __construct() {
-        $this->entry = camel_case(substr(class_basename(static::class), 0, -4));
+        $this->entry = Str::camel(substr(class_basename(static::class), 0, -4));
     }
 
     final public function populate(array $config = [], array $concreteParams = [], bool $singleton = true) {

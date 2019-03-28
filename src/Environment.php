@@ -10,6 +10,7 @@ use BadMethodCallException;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\ConnectionResolverInterface;
+use Illuminate\Support\Str;
 
 class Environment implements Contract {
 
@@ -52,7 +53,7 @@ class Environment implements Contract {
     public function setWithSpecs($specs = null) {
         if ($specs) {
             foreach($specs as $specKey => $specValue) {
-                $this->{'set'.studly_case($specKey)}($specValue);
+                $this->{'set' . Str::studly($specKey)}($specValue);
             }
         }
         return $this;
@@ -229,11 +230,11 @@ class Environment implements Contract {
         if (substr($name, 0, 3) === 'use') {
             $studly = substr($name, 3);
 
-            if ($studly !== studly_case($studly)) {
+            if ($studly !== Str::studly($studly)) {
                 throw new BadMethodCallException("Invalid method ".__CLASS__."->$name() called");
             }
 
-            $camel = camel_case($studly);
+            $camel = Str::camel($studly);
             return $this->tenant->getResolver()->get($camel)->use();
         }
 

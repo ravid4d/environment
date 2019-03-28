@@ -13,6 +13,7 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -85,7 +86,7 @@ class Tenant implements Contract {
 
         $this->resolver->populate($response['disclosed'], $concreteParams + [
             'database' => [
-                'connection' => 'tenant_' . str_random(8),
+                'connection' => 'tenant_' . Str::random(8),
                 'connector' => $this->db,
             ]
         ]);
